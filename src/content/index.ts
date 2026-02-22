@@ -1,5 +1,82 @@
 import type { AvailableSlot } from '../types'
 
+const OVERLAY_CSS = `
+#csf-overlay-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 99999;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+.csf-overlay-panel {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  width: 300px;
+  max-height: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+.csf-overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #1a73e8;
+  color: white;
+  font-weight: 500;
+}
+.csf-overlay-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.csf-overlay-list {
+  overflow-y: auto;
+  max-height: 436px;
+  padding: 8px;
+}
+.csf-overlay-slot {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  margin: 4px 0;
+  background: rgba(52, 168, 83, 0.08);
+  border: 1px solid rgba(52, 168, 83, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.csf-overlay-slot:hover {
+  background: rgba(52, 168, 83, 0.18);
+}
+.csf-overlay-date {
+  font-size: 12px;
+  color: #5f6368;
+  font-weight: 500;
+}
+.csf-overlay-time {
+  font-size: 14px;
+  color: #202124;
+  font-weight: 500;
+}
+`
+
+function injectStyles() {
+  if (document.getElementById('csf-styles')) return
+  const style = document.createElement('style')
+  style.id = 'csf-styles'
+  style.textContent = OVERLAY_CSS
+  document.head.appendChild(style)
+}
+
+injectStyles()
+
 interface OverlayMessage {
   type: 'SHOW_OVERLAY' | 'HIDE_OVERLAY'
   payload?: AvailableSlot[]

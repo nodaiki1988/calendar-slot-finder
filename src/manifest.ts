@@ -30,7 +30,6 @@ export default defineManifest({
     {
       matches: ['https://calendar.google.com/*'],
       js: ['src/content/index.ts'],
-      css: ['src/content/overlay.css'],
     },
   ],
   icons: {
