@@ -2,6 +2,11 @@ import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography } 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { AppProvider, useAppContext } from './context/AppContext'
 import PurposeSelector from './components/PurposeSelector'
+import MemberPicker from './components/MemberPicker'
+import CalendarPicker from './components/CalendarPicker'
+import SearchConfigForm from './components/SearchConfigForm'
+import ResultList from './components/ResultList'
+import TemplateManager from './components/TemplateManager'
 
 const theme = createTheme({
   palette: {
@@ -36,9 +41,15 @@ function AppContent() {
       </Box>
 
       {state.step === 'purpose' && <PurposeSelector />}
-      {state.step === 'members' && <div>メンバー選択（次のタスクで実装）</div>}
-      {state.step === 'config' && <div>検索条件設定（次のタスクで実装）</div>}
-      {state.step === 'results' && <div>結果表示（次のタスクで実装）</div>}
+      {state.step === 'members' && (
+        <>
+          <MemberPicker />
+          <CalendarPicker />
+          <TemplateManager />
+        </>
+      )}
+      {state.step === 'config' && <SearchConfigForm />}
+      {state.step === 'results' && <ResultList />}
     </Box>
   )
 }
