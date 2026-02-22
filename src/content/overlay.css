@@ -1,0 +1,8 @@
+.csf-overlay-slot {
+  position: absolute;
+  background-color: rgba(52, 168, 83, 0.2);
+  border: 1px solid rgba(52, 168, 83, 0.6);
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 1000;
+}
