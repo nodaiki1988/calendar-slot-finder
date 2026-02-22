@@ -1,7 +1,7 @@
 export async function getAuthToken(): Promise<string | null> {
   try {
     const result = await chrome.identity.getAuthToken({ interactive: true })
-    return result.token
+    return result.token ?? null
   } catch {
     return null
   }
