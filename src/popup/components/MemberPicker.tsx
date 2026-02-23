@@ -63,14 +63,23 @@ export default function MemberPicker() {
 
       <Autocomplete
         multiple
-        options={options}
-        getOptionLabel={(o) => `${o.name} (${o.email})`}
+        freeSolo
+        options={[...state.members, ...options.filter((o) => !state.members.some((m) => m.email === o.email))]}
+        getOptionLabel={(o) => typeof o === 'string' ? o : `${o.name} (${o.email})`}
+        isOptionEqualToValue={(option, value) => option.email === value.email}
         value={state.members}
-        onChange={(_e, newValue) => dispatch({ type: 'SET_MEMBERS', payload: newValue })}
+        onChange={(_e, newValue) => {
+          const members = newValue.map((v) =>
+            typeof v === 'string'
+              ? { email: v, name: v }
+              : v
+          )
+          dispatch({ type: 'SET_MEMBERS', payload: members })
+        }}
         inputValue={inputValue}
-        onInputChange={(_e, value) => {
+        onInputChange={(_e, value, reason) => {
           setInputValue(value)
-          handleSearch(value)
+          if (reason === 'input') handleSearch(value)
         }}
         loading={searching}
         renderTags={(value, getTagProps) =>
