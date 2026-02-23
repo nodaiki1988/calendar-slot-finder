@@ -7,7 +7,7 @@ export default defineManifest({
   description: 'Googleカレンダーから複数人の空き時間を検索',
   permissions: ['identity', 'storage'],
   oauth2: {
-    client_id: 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+    client_id: '626523874268-uo51dvsiinoonghvudu1cmqs85dj66c0.apps.googleusercontent.com',
     scopes: [
       'https://www.googleapis.com/auth/calendar.readonly',
       'https://www.googleapis.com/auth/calendar.events',
