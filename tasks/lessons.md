@@ -8,6 +8,12 @@
 - **修正**: `vite.config.ts` に `base: ''` を追加 → 相対パス `../../assets/...` が生成される
 - **教訓**: Chrome拡張ではファイルシステムのルートが存在しないため、絶対パスは使えない。Viteでビルドする場合は必ず `base: ''` を設定すること
 
+### Vite crossorigin 属性と Chrome MV3 (重要)
+- **問題**: Vite がビルド時に `<script>` タグへ自動で `crossorigin` 属性を付与する。Chrome MV3 拡張の popup ではこれがセキュリティエラーになり、白い画面になる
+- **原因**: Vite のデフォルト動作で HTML の script タグに `crossorigin` が付く
+- **修正**: カスタムプラグイン `removeCrossorigin` で `transformIndexHtml` フックにより除去。加えて `build.modulePreload: false` で preload リンクも抑制
+- **教訓**: Chrome拡張 + Vite の組み合わせでは `base: ''`、`modulePreload: false`、`crossorigin` 除去の3点セットが必要
+
 ### スティッキーフッターのパターン
 - Chrome拡張のポップアップ（maxHeight制限あり）でボタンを固定するには:
   - 親に `display: flex; flexDirection: column; flex: 1; minHeight: 0`
