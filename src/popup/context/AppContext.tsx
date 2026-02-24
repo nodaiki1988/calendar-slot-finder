@@ -35,6 +35,7 @@ const defaultSearchConfig: SearchConfig = {
   timeRange: { start: '09:00', end: '18:00' },
   minimumDurationMinutes: 30,
   excludeAllDayEvents: true,
+  excludeHolidays: true,
 }
 
 const initialState: AppState = {

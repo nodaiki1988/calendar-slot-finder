@@ -14,18 +14,20 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import EmailIcon from '@mui/icons-material/Email'
 import { useAppContext } from '../context/AppContext'
 import { formatSlotsAsText, formatSlotsAsMailto } from '../../logic/share-formatter'
+import type { AvailableSlot } from '../../types'
 
 interface Props {
   open: boolean
   onClose: () => void
+  slots: AvailableSlot[]
 }
 
-export default function ShareDialog({ open, onClose }: Props) {
+export default function ShareDialog({ open, onClose, slots }: Props) {
   const { state } = useAppContext()
   const [mode, setMode] = useState<'copy' | 'email'>('copy')
   const [copied, setCopied] = useState(false)
 
-  const text = formatSlotsAsText(state.results)
+  const text = formatSlotsAsText(slots)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text)
@@ -35,7 +37,7 @@ export default function ShareDialog({ open, onClose }: Props) {
 
   const handleEmail = () => {
     const emails = state.members.map((m) => m.email)
-    const url = formatSlotsAsMailto(state.results, emails)
+    const url = formatSlotsAsMailto(slots, emails)
     window.open(url)
   }
 

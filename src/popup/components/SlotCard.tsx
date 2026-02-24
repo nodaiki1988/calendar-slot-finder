@@ -1,4 +1,4 @@
-import { Box, Button, Typography } from '@mui/material'
+import { Box, Button, Checkbox, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { formatTime } from '../../utils/format'
 import type { AvailableSlot } from '../../types'
@@ -6,6 +6,8 @@ import type { AvailableSlot } from '../../types'
 interface Props {
   slot: AvailableSlot
   onCreateEvent: (slot: AvailableSlot) => void
+  checked?: boolean
+  onToggle?: () => void
 }
 
 function formatDuration(minutes: number): string {
@@ -16,7 +18,7 @@ function formatDuration(minutes: number): string {
   return `${h}時間${m}分`
 }
 
-export default function SlotCard({ slot, onCreateEvent }: Props) {
+export default function SlotCard({ slot, onCreateEvent, checked, onToggle }: Props) {
   return (
     <Box
       sx={{
@@ -25,12 +27,21 @@ export default function SlotCard({ slot, onCreateEvent }: Props) {
         justifyContent: 'space-between',
         p: 1.5,
         borderRadius: 2,
-        bgcolor: 'rgba(52, 168, 83, 0.08)',
-        border: '1px solid rgba(52, 168, 83, 0.3)',
+        bgcolor: checked === false ? 'rgba(0, 0, 0, 0.04)' : 'rgba(52, 168, 83, 0.08)',
+        border: checked === false ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid rgba(52, 168, 83, 0.3)',
+        opacity: checked === false ? 0.6 : 1,
         mb: 1,
       }}
     >
-      <Box>
+      {onToggle && (
+        <Checkbox
+          checked={checked}
+          onChange={onToggle}
+          size="small"
+          sx={{ p: 0.5, mr: 1 }}
+        />
+      )}
+      <Box sx={{ flex: 1 }}>
         <Typography variant="body2" sx={{ fontWeight: 500 }}>
           {formatTime(slot.start)} - {formatTime(slot.end)}
         </Typography>

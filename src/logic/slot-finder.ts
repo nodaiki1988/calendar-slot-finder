@@ -1,4 +1,5 @@
 import type { TimeSlot, AvailableSlot } from '../types'
+import holiday_jp from '@holiday-jp/holiday_jp'
 
 /**
  * ISO 8601 文字列からタイムゾーンオフセット部分を抽出する
@@ -229,7 +230,31 @@ export function filterByMinDuration(
 const STEP_MINUTES = 30
 
 /**
+ * TZオフセット文字列をミリ秒に変換する
+ * "+09:00" -> 32400000, "-05:00" -> -18000000
+ */
+function parseTzOffsetMs(tz: string): number {
+  if (tz === 'Z' || tz === '') return 0
+  const sign = tz.startsWith('-') ? -1 : 1
+  const [hours, minutes] = tz.slice(1).split(':').map(Number)
+  return sign * (hours * 60 + minutes) * 60_000
+}
+
+/**
+ * エポックミリ秒を30分境界に切り上げる（TZオフセット考慮）
+ * 既に境界上の場合はそのまま返す
+ */
+function snapToStepBoundary(epochMs: number, tz: string): number {
+  const stepMs = STEP_MINUTES * 60_000
+  const offsetMs = parseTzOffsetMs(tz)
+  const localMs = epochMs + offsetMs
+  const snappedLocal = Math.ceil(localMs / stepMs) * stepMs
+  return snappedLocal - offsetMs
+}
+
+/**
  * 空きスロットを固定時間で分割する（30分刻みスライディングウィンドウ）
+ * 開始時間は00分/30分境界にスナップされる
  */
 export function splitIntoFixedSlots(
   slots: AvailableSlot[],
@@ -244,7 +269,7 @@ export function splitIntoFixedSlots(
     const slotStart = new Date(slot.start).getTime()
     const slotEnd = new Date(slot.end).getTime()
 
-    let cursor = slotStart
+    let cursor = snapToStepBoundary(slotStart, tz)
     while (cursor + durationMs <= slotEnd) {
       result.push({
         start: formatWithTimezone(new Date(cursor), tz),
@@ -258,6 +283,33 @@ export function splitIntoFixedSlots(
   return result
 }
 
+
+/**
+ * 日本の祝日に該当するスロットを除外する
+ * dateRangeStart, dateRangeEnd は "YYYY-MM-DD" 形式
+ */
+export function filterByHolidays(
+  slots: AvailableSlot[],
+  dateRangeStart: string,
+  dateRangeEnd: string
+): AvailableSlot[] {
+  const [sy, sm, sd] = dateRangeStart.split('-').map(Number)
+  const [ey, em, ed] = dateRangeEnd.split('-').map(Number)
+  const holidays = holiday_jp.between(
+    new Date(sy, sm - 1, sd),
+    new Date(ey, em - 1, ed)
+  )
+  const holidayDates = new Set(
+    holidays.map((h) => {
+      const d = h.date
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${yyyy}-${mm}-${dd}`
+    })
+  )
+  return slots.filter((slot) => !holidayDates.has(getLocalDatePart(slot.start)))
+}
 
 /**
  * 終日予定（24時間以上のbusyスロット）を除外する

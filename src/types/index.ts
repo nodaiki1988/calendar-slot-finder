@@ -25,6 +25,7 @@ export interface SearchConfig {
   }
   minimumDurationMinutes: number
   excludeAllDayEvents: boolean
+  excludeHolidays: boolean
 }
 
 /** メンバー */

@@ -7,6 +7,7 @@ import {
   filterByMinDuration,
   splitIntoFixedSlots,
   filterAllDayEvents,
+  filterByHolidays,
 } from '../slot-finder'
 import type { TimeSlot } from '../../types'
 
@@ -213,6 +214,62 @@ describe('splitIntoFixedSlots', () => {
   it('空配列の場合は空配列を返す', () => {
     expect(splitIntoFixedSlots([], 60)).toEqual([])
   })
+
+  it('9:45開始 → 10:00にスナップ（60分MTG → 10:00-11:00のみ）', () => {
+    const slots = [
+      { start: '2026-02-24T09:45:00+09:00', end: '2026-02-24T11:00:00+09:00', durationMinutes: 75 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T11:00:00+09:00', durationMinutes: 60 },
+    ])
+  })
+
+  it('10:15開始 → 10:30にスナップ', () => {
+    const slots = [
+      { start: '2026-02-24T10:15:00+09:00', end: '2026-02-24T12:00:00+09:00', durationMinutes: 105 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([
+      { start: '2026-02-24T10:30:00+09:00', end: '2026-02-24T11:30:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T11:00:00+09:00', end: '2026-02-24T12:00:00+09:00', durationMinutes: 60 },
+    ])
+  })
+
+  it('10:00開始 → そのまま（境界上はスナップ不要）', () => {
+    const slots = [
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T12:00:00+09:00', durationMinutes: 120 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result[0].start).toBe('2026-02-24T10:00:00+09:00')
+  })
+
+  it('10:30開始 → そのまま', () => {
+    const slots = [
+      { start: '2026-02-24T10:30:00+09:00', end: '2026-02-24T12:00:00+09:00', durationMinutes: 90 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result[0].start).toBe('2026-02-24T10:30:00+09:00')
+  })
+
+  it('スナップ後にduration分の余裕がない → 空配列', () => {
+    const slots = [
+      { start: '2026-02-24T09:45:00+09:00', end: '2026-02-24T10:50:00+09:00', durationMinutes: 65 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([])
+  })
+
+  it('30分MTGで中途半端な開始時間のスナップ', () => {
+    const slots = [
+      { start: '2026-02-24T09:15:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 75 },
+    ]
+    const result = splitIntoFixedSlots(slots, 30)
+    expect(result).toEqual([
+      { start: '2026-02-24T09:30:00+09:00', end: '2026-02-24T10:00:00+09:00', durationMinutes: 30 },
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 30 },
+    ])
+  })
 })
 
 describe('filterAllDayEvents', () => {
@@ -246,5 +303,33 @@ describe('filterAllDayEvents', () => {
 
   it('空配列の場合は空配列を返す', () => {
     expect(filterAllDayEvents([])).toEqual([])
+  })
+})
+
+describe('filterByHolidays', () => {
+  it('2026-02-11（建国記念の日）のスロットが除外される', () => {
+    const slots = [
+      { start: '2026-02-10T10:00:00+09:00', end: '2026-02-10T11:00:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-11T10:00:00+09:00', end: '2026-02-11T11:00:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-12T10:00:00+09:00', end: '2026-02-12T11:00:00+09:00', durationMinutes: 60 },
+    ]
+    const result = filterByHolidays(slots, '2026-02-09', '2026-02-13')
+    expect(result).toHaveLength(2)
+    expect(result[0].start).toContain('2026-02-10')
+    expect(result[1].start).toContain('2026-02-12')
+  })
+
+  it('祝日がない期間はそのまま返る', () => {
+    const slots = [
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T11:00:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-25T10:00:00+09:00', end: '2026-02-25T11:00:00+09:00', durationMinutes: 60 },
+    ]
+    const result = filterByHolidays(slots, '2026-02-23', '2026-02-27')
+    expect(result).toHaveLength(2)
+  })
+
+  it('空配列は空配列を返す', () => {
+    const result = filterByHolidays([], '2026-02-01', '2026-02-28')
+    expect(result).toEqual([])
   })
 })

@@ -16,7 +16,7 @@ import {
 import { useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
-import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFixedSlots, filterAllDayEvents } from '../../logic/slot-finder'
+import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFixedSlots, filterAllDayEvents, filterByHolidays } from '../../logic/slot-finder'
 import { getLocalTimezoneOffset } from '../../utils/format'
 import type { FreeBusyResponse } from '../../types/api'
 import type { TimeSlot } from '../../types'
@@ -73,6 +73,9 @@ export default function SearchConfigForm() {
 
       slots = filterByDaysOfWeek(slots, searchConfig.daysOfWeek)
       slots = filterByTimeRange(slots, searchConfig.timeRange.start, searchConfig.timeRange.end)
+      if (searchConfig.excludeHolidays) {
+        slots = filterByHolidays(slots, searchConfig.dateRange.start, searchConfig.dateRange.end)
+      }
       slots = splitIntoFixedSlots(slots, searchConfig.minimumDurationMinutes)
 
       if (slots.length === 0) {
@@ -225,6 +228,23 @@ export default function SearchConfigForm() {
           />
         }
         label="終日の予定を除外する"
+        sx={{ mb: 1 }}
+      />
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={searchConfig.excludeHolidays}
+            onChange={(e) =>
+              dispatch({
+                type: 'SET_SEARCH_CONFIG',
+                payload: { ...searchConfig, excludeHolidays: e.target.checked },
+              })
+            }
+            size="small"
+          />
+        }
+        label="祝日を除外する"
         sx={{ mb: 2 }}
       />
 
