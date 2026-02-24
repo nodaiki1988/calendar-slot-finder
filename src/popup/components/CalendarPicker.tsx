@@ -6,10 +6,16 @@ import {
   FormGroup,
   Typography,
   CircularProgress,
+  IconButton,
+  Menu,
+  MenuItem,
 } from '@mui/material'
+import GroupAddIcon from '@mui/icons-material/GroupAdd'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
+import { FavoriteGroupStorage } from '../../services/favorite-group-storage'
 import type { CalendarListResponse } from '../../types/api'
+import type { FavoriteGroup } from '../../types'
 
 interface CalendarItem {
   id: string
@@ -17,14 +23,35 @@ interface CalendarItem {
   primary?: boolean
 }
 
+const groupStorage = new FavoriteGroupStorage()
+
 export default function CalendarPicker() {
   const { state, dispatch } = useAppContext()
   const [calendars, setCalendars] = useState<CalendarItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [groups, setGroups] = useState<FavoriteGroup[]>([])
+  const [addToGroupAnchor, setAddToGroupAnchor] = useState<null | HTMLElement>(null)
+  const [addToGroupCalendar, setAddToGroupCalendar] = useState<CalendarItem | null>(null)
 
   useEffect(() => {
     loadCalendars()
+    groupStorage.getAllGroups().then(setGroups)
   }, [])
+
+  const refreshGroups = async () => {
+    setGroups(await groupStorage.getAllGroups())
+  }
+
+  const handleAddToGroup = async (groupId: string) => {
+    if (!addToGroupCalendar) return
+    await groupStorage.addMemberToGroup(groupId, {
+      email: addToGroupCalendar.id,
+      name: addToGroupCalendar.summary,
+    })
+    await refreshGroups()
+    setAddToGroupAnchor(null)
+    setAddToGroupCalendar(null)
+  }
 
   const loadCalendars = async () => {
     try {
@@ -76,19 +103,47 @@ export default function CalendarPicker() {
           label="自分のカレンダー"
         />
         {calendars.map((cal) => (
-          <FormControlLabel
-            key={cal.id}
-            control={
-              <Checkbox
-                checked={state.calendarIds.includes(cal.id)}
-                onChange={() => handleToggle(cal.id)}
-                size="small"
-              />
-            }
-            label={cal.summary}
-          />
+          <Box key={cal.id} sx={{ display: 'flex', alignItems: 'center' }}>
+            <FormControlLabel
+              sx={{ flex: 1, mr: 0 }}
+              control={
+                <Checkbox
+                  checked={state.calendarIds.includes(cal.id)}
+                  onChange={() => handleToggle(cal.id)}
+                  size="small"
+                />
+              }
+              label={cal.summary}
+            />
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                setAddToGroupCalendar(cal)
+                setAddToGroupAnchor(e.currentTarget)
+              }}
+              sx={{ p: 0.3 }}
+              title="グループに追加"
+            >
+              <GroupAddIcon sx={{ fontSize: 18, color: 'action.active' }} />
+            </IconButton>
+          </Box>
         ))}
       </FormGroup>
+
+      <Menu
+        anchorEl={addToGroupAnchor}
+        open={Boolean(addToGroupAnchor)}
+        onClose={() => { setAddToGroupAnchor(null); setAddToGroupCalendar(null) }}
+      >
+        {groups.map((g) => (
+          <MenuItem key={g.id} onClick={() => handleAddToGroup(g.id)}>
+            {g.name}
+          </MenuItem>
+        ))}
+        {groups.length === 0 && (
+          <MenuItem disabled>グループがありません</MenuItem>
+        )}
+      </Menu>
     </Box>
   )
 }
