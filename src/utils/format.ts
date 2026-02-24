@@ -35,3 +35,16 @@ export function groupSlotsByDate(slots: AvailableSlot[]): Map<string, AvailableS
   }
   return groups
 }
+
+/**
+ * ブラウザのローカルタイムゾーンオフセットを "+HH:mm" 形式で返す
+ * 例: 日本 → "+09:00", 米国東部（EST） → "-05:00"
+ */
+export function getLocalTimezoneOffset(): string {
+  const offset = new Date().getTimezoneOffset() // 分単位、UTCからの差（日本は -540）
+  const sign = offset <= 0 ? '+' : '-'
+  const abs = Math.abs(offset)
+  const hours = String(Math.floor(abs / 60)).padStart(2, '0')
+  const minutes = String(abs % 60).padStart(2, '0')
+  return `${sign}${hours}:${minutes}`
+}

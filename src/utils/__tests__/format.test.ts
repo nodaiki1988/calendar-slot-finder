@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDate, formatTime, groupSlotsByDate } from '../format'
+import { formatDate, formatTime, groupSlotsByDate, getLocalTimezoneOffset } from '../format'
 import type { AvailableSlot } from '../../types'
 
 describe('formatDate', () => {
@@ -38,5 +38,12 @@ describe('groupSlotsByDate', () => {
   it('空配列の場合は空のMapを返す', () => {
     const grouped = groupSlotsByDate([])
     expect(grouped.size).toBe(0)
+  })
+})
+
+describe('getLocalTimezoneOffset', () => {
+  it('+HH:mm または -HH:mm 形式を返す', () => {
+    const offset = getLocalTimezoneOffset()
+    expect(offset).toMatch(/^[+-]\d{2}:\d{2}$/)
   })
 })
