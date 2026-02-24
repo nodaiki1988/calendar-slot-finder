@@ -73,10 +73,10 @@ export default function SearchConfigForm() {
 
       slots = filterByDaysOfWeek(slots, searchConfig.daysOfWeek)
       slots = filterByTimeRange(slots, searchConfig.timeRange.start, searchConfig.timeRange.end)
+      slots = splitIntoFixedSlots(slots, searchConfig.minimumDurationMinutes)
       if (searchConfig.excludeHolidays) {
         slots = filterByHolidays(slots, searchConfig.dateRange.start, searchConfig.dateRange.end)
       }
-      slots = splitIntoFixedSlots(slots, searchConfig.minimumDurationMinutes)
 
       if (slots.length === 0) {
         setError(
