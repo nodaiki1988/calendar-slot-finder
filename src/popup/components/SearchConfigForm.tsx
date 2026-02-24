@@ -10,11 +10,13 @@ import {
   FormControl,
   InputLabel,
   Alert,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material'
 import { useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
-import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFixedSlots } from '../../logic/slot-finder'
+import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFixedSlots, filterAllDayEvents } from '../../logic/slot-finder'
 import { getLocalTimezoneOffset } from '../../utils/format'
 import type { FreeBusyResponse } from '../../types/api'
 import type { TimeSlot } from '../../types'
@@ -62,7 +64,12 @@ export default function SearchConfigForm() {
         (cal) => cal.busy || []
       )
 
-      let slots = findAvailableSlots(allBusy, startISO, endISO)
+      let filteredBusy = allBusy
+      if (searchConfig.excludeAllDayEvents) {
+        filteredBusy = filterAllDayEvents(allBusy)
+      }
+
+      let slots = findAvailableSlots(filteredBusy, startISO, endISO)
 
       slots = filterByDaysOfWeek(slots, searchConfig.daysOfWeek)
       slots = filterByTimeRange(slots, searchConfig.timeRange.start, searchConfig.timeRange.end)
@@ -203,6 +210,23 @@ export default function SearchConfigForm() {
           <MenuItem value={120}>2時間</MenuItem>
         </Select>
       </FormControl>
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={searchConfig.excludeAllDayEvents}
+            onChange={(e) =>
+              dispatch({
+                type: 'SET_SEARCH_CONFIG',
+                payload: { ...searchConfig, excludeAllDayEvents: e.target.checked },
+              })
+            }
+            size="small"
+          />
+        }
+        label="終日の予定を除外する"
+        sx={{ mb: 2 }}
+      />
 
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }}>
