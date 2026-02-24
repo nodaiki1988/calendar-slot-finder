@@ -5,6 +5,7 @@ import {
   filterByDaysOfWeek,
   filterByTimeRange,
   filterByMinDuration,
+  splitIntoFixedSlots,
 } from '../slot-finder'
 import type { TimeSlot } from '../../types'
 
@@ -147,5 +148,68 @@ describe('filterByMinDuration', () => {
     const result = filterByMinDuration(slots, 30)
     expect(result).toHaveLength(1)
     expect(result[0].durationMinutes).toBe(60)
+  })
+})
+
+describe('splitIntoFixedSlots', () => {
+  it('空き時間を指定時間ごとに30分刻みで分割する', () => {
+    const slots = [
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T12:00:00+09:00', durationMinutes: 180 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T10:00:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T09:30:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T11:00:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T10:30:00+09:00', end: '2026-02-24T11:30:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T11:00:00+09:00', end: '2026-02-24T12:00:00+09:00', durationMinutes: 60 },
+    ])
+  })
+
+  it('空き時間が指定時間未満の場合は空配列を返す', () => {
+    const slots = [
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T09:50:00+09:00', durationMinutes: 50 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([])
+  })
+
+  it('ちょうど指定時間の空きは1スロットを返す', () => {
+    const slots = [
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T10:00:00+09:00', durationMinutes: 60 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T10:00:00+09:00', durationMinutes: 60 },
+    ])
+  })
+
+  it('複数の空きスロットをそれぞれ分割する', () => {
+    const slots = [
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 90 },
+      { start: '2026-02-24T13:00:00+09:00', end: '2026-02-24T14:00:00+09:00', durationMinutes: 60 },
+    ]
+    const result = splitIntoFixedSlots(slots, 60)
+    expect(result).toEqual([
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T10:00:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T09:30:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 60 },
+      { start: '2026-02-24T13:00:00+09:00', end: '2026-02-24T14:00:00+09:00', durationMinutes: 60 },
+    ])
+  })
+
+  it('30分のMTG時間でも正しく分割する', () => {
+    const slots = [
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 90 },
+    ]
+    const result = splitIntoFixedSlots(slots, 30)
+    expect(result).toEqual([
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T09:30:00+09:00', durationMinutes: 30 },
+      { start: '2026-02-24T09:30:00+09:00', end: '2026-02-24T10:00:00+09:00', durationMinutes: 30 },
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T10:30:00+09:00', durationMinutes: 30 },
+    ])
+  })
+
+  it('空配列の場合は空配列を返す', () => {
+    expect(splitIntoFixedSlots([], 60)).toEqual([])
   })
 })

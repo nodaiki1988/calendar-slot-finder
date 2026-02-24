@@ -225,3 +225,35 @@ export function filterByMinDuration(
 ): AvailableSlot[] {
   return slots.filter((slot) => slot.durationMinutes >= minMinutes)
 }
+
+const STEP_MINUTES = 30
+
+/**
+ * 空きスロットを固定時間で分割する（30分刻みスライディングウィンドウ）
+ */
+export function splitIntoFixedSlots(
+  slots: AvailableSlot[],
+  durationMinutes: number
+): AvailableSlot[] {
+  const result: AvailableSlot[] = []
+  const stepMs = STEP_MINUTES * 60_000
+  const durationMs = durationMinutes * 60_000
+
+  for (const slot of slots) {
+    const tz = extractTimezone(slot.start)
+    const slotStart = new Date(slot.start).getTime()
+    const slotEnd = new Date(slot.end).getTime()
+
+    let cursor = slotStart
+    while (cursor + durationMs <= slotEnd) {
+      result.push({
+        start: formatWithTimezone(new Date(cursor), tz),
+        end: formatWithTimezone(new Date(cursor + durationMs), tz),
+        durationMinutes,
+      })
+      cursor += stepMs
+    }
+  }
+
+  return result
+}
