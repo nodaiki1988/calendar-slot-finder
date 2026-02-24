@@ -8,7 +8,8 @@ const FREEBUSY_TTL = 5 * 60 * 1000   // 5分
 const LIST_TTL = 30 * 60 * 1000       // 30分
 
 chrome.runtime.onMessage.addListener(
-  (message: MessageType, _sender, sendResponse) => {
+  (message: MessageType, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id) return
     handleMessage(message).then(sendResponse)
     return true // 非同期レスポンス
   }
@@ -24,7 +25,7 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
     switch (message.type) {
       case 'GET_AUTH_TOKEN':
         return token
-          ? { success: true, data: { token } }
+          ? { success: true, data: { authenticated: true } }
           : { success: false, error: '認証に失敗しました' }
 
       case 'FETCH_FREE_BUSY': {

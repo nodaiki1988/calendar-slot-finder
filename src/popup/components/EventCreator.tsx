@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -11,6 +11,9 @@ import {
   Select,
   MenuItem,
   Alert,
+  Typography,
+  Box,
+  Chip,
 } from '@mui/material'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
@@ -38,6 +41,21 @@ export default function EventCreator({ slot, open, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [removedEmails, setRemovedEmails] = useState<Set<string>>(new Set())
+
+  const allGuests = useMemo(() => {
+    const fromMembers = state.members.map((m) => ({
+      email: m.email,
+      name: m.name,
+    }))
+    const fromCalendars = state.calendarIds
+      .filter((id) => id !== 'primary' && id.includes('@'))
+      .filter((id) => !state.members.some((m) => m.email === id))
+      .map((id) => ({ email: id, name: id }))
+    return [...fromMembers, ...fromCalendars]
+  }, [state.members, state.calendarIds])
+
+  const activeGuests = allGuests.filter((g) => !removedEmails.has(g.email))
 
   const handleCreate = async () => {
     if (!slot || !summary.trim()) return
@@ -50,7 +68,7 @@ export default function EventCreator({ slot, open, onClose }: Props) {
         description: description.trim() || undefined,
         start: { dateTime: slot.start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         end: { dateTime: slot.end, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        attendees: state.members.map((m) => ({ email: m.email })),
+        attendees: activeGuests.map((g) => ({ email: g.email })),
       }
 
       if (recurrence) {
@@ -65,6 +83,7 @@ export default function EventCreator({ slot, open, onClose }: Props) {
         setSummary('')
         setDescription('')
         setRecurrence('')
+        setRemovedEmails(new Set())
       }, 1500)
     } catch (e) {
       setError(e instanceof Error ? e.message : '予定の作成に失敗しました')
@@ -79,6 +98,26 @@ export default function EventCreator({ slot, open, onClose }: Props) {
       <DialogContent>
         {success && <Alert severity="success" sx={{ mb: 2 }}>予定を作成しました</Alert>}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+        {activeGuests.length > 0 && (
+          <Box sx={{ mt: 1, mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              ゲスト（{activeGuests.length}人）
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {activeGuests.map((g) => (
+                <Chip
+                  key={g.email}
+                  label={g.name !== g.email ? g.name : g.email}
+                  size="small"
+                  onDelete={() =>
+                    setRemovedEmails((prev) => new Set([...prev, g.email]))
+                  }
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
 
         <TextField
           label="タイトル"

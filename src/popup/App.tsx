@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { AppProvider, useAppContext } from './context/AppContext'
@@ -18,10 +19,42 @@ const theme = createTheme({
   shape: { borderRadius: 12 },
 })
 
+function parseDateFromCalendarUrl(url: string): string | null {
+  // /calendar/r/week/2026/2/23, /calendar/r/day/2026/2/23 等からYYYY-MM-DD取得
+  const match = url.match(/\/calendar\/r\/\w+\/(\d{4})\/(\d{1,2})\/(\d{1,2})/)
+  if (match) {
+    const [, y, m, d] = match
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+  }
+  return null
+}
+
 function AppContent() {
   const { state, dispatch } = useAppContext()
 
+  useEffect(() => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url
+      if (url) {
+        const date = parseDateFromCalendarUrl(url)
+        if (date) {
+          dispatch({
+            type: 'SET_SEARCH_CONFIG',
+            payload: {
+              ...state.searchConfig,
+              dateRange: { start: date, end: date },
+            },
+          })
+        }
+      }
+    })
+  }, [])
+
   const handleBack = () => {
+    if (state.purpose === 'personal' && state.step === 'config') {
+      dispatch({ type: 'SET_STEP', payload: 'purpose' })
+      return
+    }
     const steps: Array<typeof state.step> = ['purpose', 'members', 'config', 'results']
     const idx = steps.indexOf(state.step)
     if (idx > 0) dispatch({ type: 'SET_STEP', payload: steps[idx - 1] })

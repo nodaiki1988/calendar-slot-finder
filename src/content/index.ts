@@ -82,9 +82,26 @@ interface OverlayMessage {
   payload?: AvailableSlot[]
 }
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
+
+function isValidSlot(s: unknown): s is AvailableSlot {
+  if (typeof s !== 'object' || s === null) return false
+  const obj = s as Record<string, unknown>
+  return (
+    typeof obj.start === 'string' &&
+    typeof obj.end === 'string' &&
+    ISO_DATE_RE.test(obj.start) &&
+    ISO_DATE_RE.test(obj.end)
+  )
+}
+
 chrome.runtime.onMessage.addListener(
   (message: OverlayMessage, _sender, sendResponse) => {
-    if (message.type === 'SHOW_OVERLAY' && message.payload) {
+    if (
+      message.type === 'SHOW_OVERLAY' &&
+      Array.isArray(message.payload) &&
+      message.payload.every(isValidSlot)
+    ) {
       showOverlay(message.payload)
       sendResponse({ success: true })
     } else if (message.type === 'HIDE_OVERLAY') {
@@ -94,53 +111,70 @@ chrome.runtime.onMessage.addListener(
   }
 )
 
+function formatTime(d: Date): string {
+  return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatDate(d: Date): string {
+  const days = ['日', '月', '火', '水', '木', '金', '土']
+  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`
+}
+
 function showOverlay(slots: AvailableSlot[]) {
   hideOverlay()
 
   const container = document.createElement('div')
   container.id = 'csf-overlay-container'
-  container.innerHTML = `
-    <div class="csf-overlay-panel">
-      <div class="csf-overlay-header">
-        <span>空き時間（${slots.length}件）</span>
-        <button class="csf-overlay-close">&times;</button>
-      </div>
-      <div class="csf-overlay-list">
-        ${slots.map((slot) => {
-          const start = new Date(slot.start)
-          const end = new Date(slot.end)
-          const formatTime = (d: Date) =>
-            d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
-          const formatDate = (d: Date) => {
-            const days = ['日', '月', '火', '水', '木', '金', '土']
-            return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`
-          }
-          return `
-            <div class="csf-overlay-slot" data-start="${slot.start}" data-end="${slot.end}">
-              <span class="csf-overlay-date">${formatDate(start)}</span>
-              <span class="csf-overlay-time">${formatTime(start)} - ${formatTime(end)}</span>
-            </div>
-          `
-        }).join('')}
-      </div>
-    </div>
-  `
-  document.body.appendChild(container)
 
-  container.querySelector('.csf-overlay-close')?.addEventListener('click', hideOverlay)
+  const panel = document.createElement('div')
+  panel.className = 'csf-overlay-panel'
 
-  container.querySelectorAll('.csf-overlay-slot').forEach((el) => {
-    el.addEventListener('click', () => {
-      const start = el.getAttribute('data-start')
-      const end = el.getAttribute('data-end')
-      if (start && end) {
-        const url = new URL('https://calendar.google.com/calendar/render')
-        url.searchParams.set('action', 'TEMPLATE')
-        url.searchParams.set('dates', `${toGCalDate(start)}/${toGCalDate(end)}`)
-        window.open(url.toString(), '_blank')
-      }
+  const header = document.createElement('div')
+  header.className = 'csf-overlay-header'
+  const headerText = document.createElement('span')
+  headerText.textContent = `空き時間（${slots.length}件）`
+  const closeBtn = document.createElement('button')
+  closeBtn.className = 'csf-overlay-close'
+  closeBtn.textContent = '\u00d7'
+  closeBtn.addEventListener('click', hideOverlay)
+  header.appendChild(headerText)
+  header.appendChild(closeBtn)
+
+  const list = document.createElement('div')
+  list.className = 'csf-overlay-list'
+
+  for (const slot of slots) {
+    const start = new Date(slot.start)
+    const end = new Date(slot.end)
+
+    const slotEl = document.createElement('div')
+    slotEl.className = 'csf-overlay-slot'
+
+    const dateEl = document.createElement('span')
+    dateEl.className = 'csf-overlay-date'
+    dateEl.textContent = formatDate(start)
+
+    const timeEl = document.createElement('span')
+    timeEl.className = 'csf-overlay-time'
+    timeEl.textContent = `${formatTime(start)} - ${formatTime(end)}`
+
+    slotEl.appendChild(dateEl)
+    slotEl.appendChild(timeEl)
+
+    slotEl.addEventListener('click', () => {
+      const url = new URL('https://calendar.google.com/calendar/render')
+      url.searchParams.set('action', 'TEMPLATE')
+      url.searchParams.set('dates', `${toGCalDate(slot.start)}/${toGCalDate(slot.end)}`)
+      window.open(url.toString(), '_blank')
     })
-  })
+
+    list.appendChild(slotEl)
+  }
+
+  panel.appendChild(header)
+  panel.appendChild(list)
+  container.appendChild(panel)
+  document.body.appendChild(container)
 }
 
 function hideOverlay() {

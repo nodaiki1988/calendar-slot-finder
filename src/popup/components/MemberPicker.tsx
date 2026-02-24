@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   TextField,
@@ -7,17 +7,47 @@ import {
   Typography,
   Button,
   CircularProgress,
+  IconButton,
 } from '@mui/material'
+import StarIcon from '@mui/icons-material/Star'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
+import { FavoriteMemberStorage } from '../../services/favorite-storage'
 import type { Member } from '../../types'
 import type { DirectoryPeopleResponse } from '../../types/api'
+
+const favoriteStorage = new FavoriteMemberStorage()
 
 export default function MemberPicker() {
   const { state, dispatch } = useAppContext()
   const [inputValue, setInputValue] = useState('')
   const [options, setOptions] = useState<Member[]>([])
   const [searching, setSearching] = useState(false)
+  const [favorites, setFavorites] = useState<Member[]>([])
+  const [favoriteEmails, setFavoriteEmails] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    favoriteStorage.getAll().then((favs) => {
+      setFavorites(favs)
+      setFavoriteEmails(new Set(favs.map((f) => f.email)))
+    })
+  }, [])
+
+  const refreshFavorites = async () => {
+    const favs = await favoriteStorage.getAll()
+    setFavorites(favs)
+    setFavoriteEmails(new Set(favs.map((f) => f.email)))
+  }
+
+  const toggleFavorite = async (member: Member) => {
+    if (favoriteEmails.has(member.email)) {
+      await favoriteStorage.remove(member.email)
+    } else {
+      await favoriteStorage.add(member)
+    }
+    await refreshFavorites()
+  }
 
   const handleSearch = async (query: string) => {
     if (query.length < 2) {
@@ -45,15 +75,29 @@ export default function MemberPicker() {
     }
   }
 
+  const handleAddMember = (member: Member) => {
+    if (!state.members.some((m) => m.email === member.email)) {
+      dispatch({ type: 'ADD_MEMBER', payload: member })
+    }
+    setInputValue('')
+    setOptions([])
+  }
+
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+
   const handleAddManualEmail = () => {
-    if (inputValue && inputValue.includes('@')) {
-      dispatch({
-        type: 'ADD_MEMBER',
-        payload: { email: inputValue, name: inputValue },
-      })
-      setInputValue('')
+    if (inputValue && isValidEmail(inputValue)) {
+      handleAddMember({ email: inputValue, name: inputValue })
     }
   }
+
+  const filteredOptions = options.filter(
+    (o) => !state.members.some((m) => m.email === o.email)
+  )
+
+  const unselectedFavorites = favorites.filter(
+    (f) => !state.members.some((m) => m.email === f.email)
+  )
 
   return (
     <Box>
@@ -61,20 +105,66 @@ export default function MemberPicker() {
         メンバーを選択
       </Typography>
 
+      {state.members.length > 0 && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+          {state.members.map((member) => (
+            <Chip
+              key={member.email}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                  {member.name}
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleFavorite(member)
+                    }}
+                    sx={{ p: 0, ml: 0.3 }}
+                  >
+                    {favoriteEmails.has(member.email) ? (
+                      <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                    ) : (
+                      <StarBorderIcon sx={{ fontSize: 16 }} />
+                    )}
+                  </IconButton>
+                </Box>
+              }
+              size="small"
+              onDelete={() =>
+                dispatch({ type: 'REMOVE_MEMBER', payload: member.email })
+              }
+            />
+          ))}
+        </Box>
+      )}
+
+      {unselectedFavorites.length > 0 && (
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+            お気に入り
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {unselectedFavorites.map((fav) => (
+              <Chip
+                key={fav.email}
+                label={fav.name}
+                size="small"
+                icon={<StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
+                onClick={() => handleAddMember(fav)}
+                variant="outlined"
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+
       <Autocomplete
-        multiple
-        freeSolo
-        options={[...state.members, ...options.filter((o) => !state.members.some((m) => m.email === o.email))]}
-        getOptionLabel={(o) => typeof o === 'string' ? o : `${o.name} (${o.email})`}
-        isOptionEqualToValue={(option, value) => option.email === value.email}
-        value={state.members}
-        onChange={(_e, newValue) => {
-          const members = newValue.map((v) =>
-            typeof v === 'string'
-              ? { email: v, name: v }
-              : v
-          )
-          dispatch({ type: 'SET_MEMBERS', payload: members })
+        options={filteredOptions}
+        getOptionLabel={(o) => `${o.name} (${o.email})`}
+        value={null}
+        onChange={(_e, member) => {
+          if (member) handleAddMember(member)
         }}
         inputValue={inputValue}
         onInputChange={(_e, value, reason) => {
@@ -82,16 +172,6 @@ export default function MemberPicker() {
           if (reason === 'input') handleSearch(value)
         }}
         loading={searching}
-        renderTags={(value, getTagProps) =>
-          value.map((member, index) => (
-            <Chip
-              {...getTagProps({ index })}
-              key={member.email}
-              label={member.name}
-              size="small"
-            />
-          ))
-        }
         renderInput={(params) => (
           <TextField
             {...params}
@@ -119,7 +199,7 @@ export default function MemberPicker() {
         sx={{ mb: 1 }}
       />
 
-      {inputValue.includes('@') && (
+      {isValidEmail(inputValue) && (
         <Button size="small" onClick={handleAddManualEmail} sx={{ mb: 2 }}>
           「{inputValue}」を追加
         </Button>
@@ -128,7 +208,7 @@ export default function MemberPicker() {
       <Button
         variant="contained"
         fullWidth
-        disabled={state.members.length === 0}
+        disabled={state.members.length === 0 && state.calendarIds.length === 0}
         onClick={() => dispatch({ type: 'SET_STEP', payload: 'config' })}
         sx={{ mt: 2 }}
       >

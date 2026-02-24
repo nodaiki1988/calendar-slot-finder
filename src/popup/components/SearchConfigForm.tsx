@@ -55,12 +55,12 @@ export default function SearchConfigForm() {
         },
       })
 
+      const startISO = `${searchConfig.dateRange.start}T${searchConfig.timeRange.start}:00${tzOffset}`
+      const endISO = `${searchConfig.dateRange.end}T${searchConfig.timeRange.end}:00${tzOffset}`
+
       const allBusy: TimeSlot[] = Object.values(result.calendars).flatMap(
         (cal) => cal.busy || []
       )
-
-      const startISO = `${searchConfig.dateRange.start}T${searchConfig.timeRange.start}:00${tzOffset}`
-      const endISO = `${searchConfig.dateRange.end}T${searchConfig.timeRange.end}:00${tzOffset}`
 
       let slots = findAvailableSlots(allBusy, startISO, endISO)
 

@@ -36,6 +36,13 @@ export default function CalendarPicker() {
           .filter((c) => !c.primary)
           .map((c) => ({ id: c.id, summary: c.summary }))
       )
+      // 初回読み込み時に自分のカレンダーをデフォルトで含める
+      if (!state.calendarIds.includes('primary')) {
+        dispatch({
+          type: 'SET_CALENDAR_IDS',
+          payload: ['primary', ...state.calendarIds],
+        })
+      }
     } catch {
       // エラー時は空リスト
     } finally {
@@ -52,14 +59,22 @@ export default function CalendarPicker() {
 
   if (loading) return <CircularProgress size={24} />
 
-  if (calendars.length === 0) return null
-
   return (
     <Box sx={{ mt: 2 }}>
       <Typography variant="subtitle2" gutterBottom>
-        共有カレンダー
+        カレンダー
       </Typography>
       <FormGroup>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={state.calendarIds.includes('primary')}
+              onChange={() => handleToggle('primary')}
+              size="small"
+            />
+          }
+          label="自分のカレンダー"
+        />
         {calendars.map((cal) => (
           <FormControlLabel
             key={cal.id}

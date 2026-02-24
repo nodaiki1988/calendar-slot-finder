@@ -43,6 +43,12 @@ export interface Template {
   createdAt: string
 }
 
+/** メンバーごとの空き状況（リソース管理用） */
+export interface MemberAvailability {
+  member: Member
+  availableSlots: AvailableSlot[]
+}
+
 /** 繰り返しルール */
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'
 
