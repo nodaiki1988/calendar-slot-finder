@@ -25,4 +25,8 @@ import '@testing-library/jest-dom'
       removeListener: vi.fn(),
     },
   },
+  tabs: {
+    query: vi.fn((_query: unknown, callback: (tabs: unknown[]) => void) => callback([])),
+    sendMessage: vi.fn(),
+  },
 }
