@@ -27,28 +27,40 @@ export default function ResultList() {
   }
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-        空き時間（{state.results.length}件）
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', pb: 1 }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+          空き時間（{state.results.length}件）
+        </Typography>
 
-      {Array.from(grouped.entries()).map(([date, slots]) => (
-        <Box key={date} sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            {formatDate(date)}
-          </Typography>
-          {slots.map((slot, i) => (
-            <SlotCard
-              key={i}
-              slot={slot}
-              onCreateEvent={setSelectedSlot}
-            />
-          ))}
-          <Divider sx={{ mt: 1 }} />
-        </Box>
-      ))}
+        {Array.from(grouped.entries()).map(([date, slots]) => (
+          <Box key={date} sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              {formatDate(date)}
+            </Typography>
+            {slots.map((slot, i) => (
+              <SlotCard
+                key={i}
+                slot={slot}
+                onCreateEvent={setSelectedSlot}
+              />
+            ))}
+            <Divider sx={{ mt: 1 }} />
+          </Box>
+        ))}
+      </Box>
 
-      <Box sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{
+        position: 'sticky',
+        bottom: 0,
+        bgcolor: 'background.paper',
+        pt: 1,
+        pb: 1,
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        display: 'flex',
+        gap: 1,
+      }}>
         <Button
           variant="outlined"
           startIcon={<CalendarTodayIcon />}

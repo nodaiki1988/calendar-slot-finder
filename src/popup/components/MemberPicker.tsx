@@ -141,27 +141,24 @@ export default function MemberPicker() {
       {state.members.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           {state.members.map((member) => (
-            <Chip
-              key={member.email}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                  {member.name}
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setAddToGroupMember(member)
-                      setAddToGroupAnchor(e.currentTarget)
-                    }}
-                    sx={{ p: 0, ml: 0.3 }}
-                  >
-                    <GroupAddIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </Box>
-              }
-              size="small"
-              onDelete={() => handleRemoveMember(member.email)}
-            />
+            <Box key={member.email} sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+              <Chip
+                label={member.name}
+                size="small"
+                onDelete={() => handleRemoveMember(member.email)}
+              />
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  setAddToGroupMember(member)
+                  setAddToGroupAnchor(e.currentTarget)
+                }}
+                sx={{ p: 0.3 }}
+                title="グループに追加"
+              >
+                <GroupAddIcon sx={{ fontSize: 18, color: 'action.active' }} />
+              </IconButton>
+            </Box>
           ))}
         </Box>
       )}
@@ -276,6 +273,27 @@ export default function MemberPicker() {
           if (reason === 'input') handleSearch(value)
         }}
         loading={searching}
+        renderOption={(props, option) => (
+          <li {...props} key={option.email}>
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <Box sx={{ flex: 1 }}>
+                {option.name} ({option.email})
+              </Box>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setAddToGroupMember(option)
+                  setAddToGroupAnchor(e.currentTarget)
+                }}
+                sx={{ p: 0.3 }}
+                title="グループに追加"
+              >
+                <GroupAddIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+          </li>
+        )}
         renderInput={(params) => (
           <TextField
             {...params}

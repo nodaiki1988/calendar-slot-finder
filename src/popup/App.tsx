@@ -102,7 +102,11 @@ function AppContent() {
         </Box>
       )}
       {state.step === 'config' && <SearchConfigForm />}
-      {state.step === 'results' && <ResultList />}
+      {state.step === 'results' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <ResultList />
+        </Box>
+      )}
     </Box>
   )
 }
