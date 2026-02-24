@@ -4,6 +4,7 @@ import { crx } from '@crxjs/vite-plugin'
 import manifest from './src/manifest'
 
 export default defineConfig({
+  base: '',
   plugins: [react(), crx({ manifest })],
   test: {
     globals: true,
