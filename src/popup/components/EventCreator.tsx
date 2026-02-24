@@ -48,8 +48,8 @@ export default function EventCreator({ slot, open, onClose }: Props) {
       const params: InsertEventRequest = {
         summary: summary.trim(),
         description: description.trim() || undefined,
-        start: { dateTime: slot.start, timeZone: 'Asia/Tokyo' },
-        end: { dateTime: slot.end, timeZone: 'Asia/Tokyo' },
+        start: { dateTime: slot.start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        end: { dateTime: slot.end, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         attendees: state.members.map((m) => ({ email: m.email })),
       }
 
