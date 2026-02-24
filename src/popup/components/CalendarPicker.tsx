@@ -9,8 +9,11 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material'
 import GroupAddIcon from '@mui/icons-material/GroupAdd'
+import CheckIcon from '@mui/icons-material/Check'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
 import { FavoriteGroupStorage } from '../../services/favorite-group-storage'
@@ -42,15 +45,19 @@ export default function CalendarPicker() {
     setGroups(await groupStorage.getAllGroups())
   }
 
-  const handleAddToGroup = async (groupId: string) => {
+  const handleToggleGroup = async (groupId: string) => {
     if (!addToGroupCalendar) return
-    await groupStorage.addMemberToGroup(groupId, {
-      email: addToGroupCalendar.id,
-      name: addToGroupCalendar.summary,
-    })
+    const group = groups.find((g) => g.id === groupId)
+    const isInGroup = group?.members.some((m) => m.email === addToGroupCalendar.id)
+    if (isInGroup) {
+      await groupStorage.removeMemberFromGroup(groupId, addToGroupCalendar.id)
+    } else {
+      await groupStorage.addMemberToGroup(groupId, {
+        email: addToGroupCalendar.id,
+        name: addToGroupCalendar.summary,
+      })
+    }
     await refreshGroups()
-    setAddToGroupAnchor(null)
-    setAddToGroupCalendar(null)
   }
 
   const loadCalendars = async () => {
@@ -87,7 +94,7 @@ export default function CalendarPicker() {
   if (loading) return <CircularProgress size={24} />
 
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box sx={{ mt: 2, pr: 1 }}>
       <Typography variant="subtitle2" gutterBottom>
         カレンダー
       </Typography>
@@ -121,7 +128,7 @@ export default function CalendarPicker() {
                 setAddToGroupCalendar(cal)
                 setAddToGroupAnchor(e.currentTarget)
               }}
-              sx={{ p: 0.3 }}
+              sx={{ p: 0.3, flexShrink: 0 }}
               title="グループに追加"
             >
               <GroupAddIcon sx={{ fontSize: 18, color: 'action.active' }} />
@@ -135,11 +142,19 @@ export default function CalendarPicker() {
         open={Boolean(addToGroupAnchor)}
         onClose={() => { setAddToGroupAnchor(null); setAddToGroupCalendar(null) }}
       >
-        {groups.map((g) => (
-          <MenuItem key={g.id} onClick={() => handleAddToGroup(g.id)}>
-            {g.name}
-          </MenuItem>
-        ))}
+        {groups.map((g) => {
+          const isInGroup = addToGroupCalendar
+            ? g.members.some((m) => m.email === addToGroupCalendar.id)
+            : false
+          return (
+            <MenuItem key={g.id} onClick={() => handleToggleGroup(g.id)}>
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                {isInGroup && <CheckIcon sx={{ fontSize: 18, color: 'primary.main' }} />}
+              </ListItemIcon>
+              <ListItemText>{g.name}</ListItemText>
+            </MenuItem>
+          )
+        })}
         {groups.length === 0 && (
           <MenuItem disabled>グループがありません</MenuItem>
         )}

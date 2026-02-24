@@ -17,9 +17,12 @@ import {
   DialogActions,
   Menu,
   MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import GroupAddIcon from '@mui/icons-material/GroupAdd'
+import CheckIcon from '@mui/icons-material/Check'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import { useAppContext } from '../context/AppContext'
@@ -116,12 +119,16 @@ export default function MemberPicker() {
     await refreshGroups()
   }
 
-  const handleAddToGroup = async (groupId: string) => {
+  const handleToggleGroup = async (groupId: string) => {
     if (!addToGroupMember) return
-    await groupStorage.addMemberToGroup(groupId, addToGroupMember)
+    const group = groups.find((g) => g.id === groupId)
+    const isInGroup = group?.members.some((m) => m.email === addToGroupMember.email)
+    if (isInGroup) {
+      await groupStorage.removeMemberFromGroup(groupId, addToGroupMember.email)
+    } else {
+      await groupStorage.addMemberToGroup(groupId, addToGroupMember)
+    }
     await refreshGroups()
-    setAddToGroupAnchor(null)
-    setAddToGroupMember(null)
   }
 
   const handleRemoveFromGroup = async (groupId: string, email: string) => {
@@ -163,17 +170,25 @@ export default function MemberPicker() {
         </Box>
       )}
 
-      {/* グループに追加メニュー */}
+      {/* グループに追加/削除メニュー */}
       <Menu
         anchorEl={addToGroupAnchor}
         open={Boolean(addToGroupAnchor)}
         onClose={() => { setAddToGroupAnchor(null); setAddToGroupMember(null) }}
       >
-        {groups.map((g) => (
-          <MenuItem key={g.id} onClick={() => handleAddToGroup(g.id)}>
-            {g.name}
-          </MenuItem>
-        ))}
+        {groups.map((g) => {
+          const isInGroup = addToGroupMember
+            ? g.members.some((m) => m.email === addToGroupMember.email)
+            : false
+          return (
+            <MenuItem key={g.id} onClick={() => handleToggleGroup(g.id)}>
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                {isInGroup && <CheckIcon sx={{ fontSize: 18, color: 'primary.main' }} />}
+              </ListItemIcon>
+              <ListItemText>{g.name}</ListItemText>
+            </MenuItem>
+          )
+        })}
         {groups.length === 0 && (
           <MenuItem disabled>グループがありません</MenuItem>
         )}
