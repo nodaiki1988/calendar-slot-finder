@@ -257,3 +257,15 @@ export function splitIntoFixedSlots(
 
   return result
 }
+
+
+/**
+ * 終日予定（24時間以上のbusyスロット）を除外する
+ */
+export function filterAllDayEvents(busySlots: TimeSlot[]): TimeSlot[] {
+  const DAY_MS = 24 * 60 * 60_000
+  return busySlots.filter((slot) => {
+    const duration = new Date(slot.end).getTime() - new Date(slot.start).getTime()
+    return duration < DAY_MS
+  })
+}

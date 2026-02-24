@@ -6,6 +6,7 @@ import {
   filterByTimeRange,
   filterByMinDuration,
   splitIntoFixedSlots,
+  filterAllDayEvents,
 } from '../slot-finder'
 import type { TimeSlot } from '../../types'
 
@@ -211,5 +212,39 @@ describe('splitIntoFixedSlots', () => {
 
   it('空配列の場合は空配列を返す', () => {
     expect(splitIntoFixedSlots([], 60)).toEqual([])
+  })
+})
+
+describe('filterAllDayEvents', () => {
+  it('24時間以上のbusyスロットを除外する', () => {
+    const busy: TimeSlot[] = [
+      { start: '2026-02-24T00:00:00+09:00', end: '2026-02-25T00:00:00+09:00' },
+      { start: '2026-02-24T10:00:00+09:00', end: '2026-02-24T11:00:00+09:00' },
+    ]
+    const result = filterAllDayEvents(busy)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual(busy[1])
+  })
+
+  it('24時間未満のスロットはそのまま残す', () => {
+    const busy: TimeSlot[] = [
+      { start: '2026-02-24T09:00:00+09:00', end: '2026-02-24T18:00:00+09:00' },
+    ]
+    const result = filterAllDayEvents(busy)
+    expect(result).toHaveLength(1)
+  })
+
+  it('複数日にまたがる終日予定も除外する', () => {
+    const busy: TimeSlot[] = [
+      { start: '2026-02-24T00:00:00+09:00', end: '2026-02-27T00:00:00+09:00' },
+      { start: '2026-02-25T14:00:00+09:00', end: '2026-02-25T15:00:00+09:00' },
+    ]
+    const result = filterAllDayEvents(busy)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual(busy[1])
+  })
+
+  it('空配列の場合は空配列を返す', () => {
+    expect(filterAllDayEvents([])).toEqual([])
   })
 })
