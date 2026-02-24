@@ -1,5 +1,5 @@
 /** 利用目的 */
-export type Purpose = 'meeting' | 'resource' | 'personal'
+export type Purpose = 'meeting' | 'personal'
 
 /** 時間スロット */
 export interface TimeSlot {

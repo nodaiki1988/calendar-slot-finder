@@ -6,7 +6,6 @@ import {
   Typography,
 } from '@mui/material'
 import GroupsIcon from '@mui/icons-material/Groups'
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd'
 import PersonSearchIcon from '@mui/icons-material/PersonSearch'
 import { useAppContext } from '../context/AppContext'
 import type { Purpose } from '../../types'
@@ -22,12 +21,6 @@ const purposes: Array<{
     label: '会議の日程調整',
     description: 'チームメンバーの空き時間を見つけて会議をスケジュール',
     icon: <GroupsIcon sx={{ fontSize: 40 }} />,
-  },
-  {
-    value: 'resource',
-    label: 'リソース管理',
-    description: '誰がいつ空いているかを一覧で確認',
-    icon: <AssignmentIndIcon sx={{ fontSize: 40 }} />,
   },
   {
     value: 'personal',
