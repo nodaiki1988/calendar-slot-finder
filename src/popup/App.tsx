@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography } from '@mui/material'
+import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography, Button } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { AppProvider, useAppContext } from './context/AppContext'
 import PurposeSelector from './components/PurposeSelector'
@@ -61,8 +61,8 @@ function AppContent() {
   }
 
   return (
-    <Box sx={{ width: 400, minHeight: 500, p: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+    <Box sx={{ width: 400, minHeight: 500, maxHeight: 600, p: 2, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexShrink: 0 }}>
         {state.step !== 'purpose' && (
           <IconButton onClick={handleBack} size="small" sx={{ mr: 1 }}>
             <ArrowBackIcon />
@@ -75,11 +75,31 @@ function AppContent() {
 
       {state.step === 'purpose' && <PurposeSelector />}
       {state.step === 'members' && (
-        <>
-          <MemberPicker />
-          <CalendarPicker />
-          <TemplateManager />
-        </>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <Box sx={{ flex: 1, overflowY: 'auto', pb: 1 }}>
+            <MemberPicker />
+            <CalendarPicker />
+            <TemplateManager />
+          </Box>
+          <Box sx={{
+            position: 'sticky',
+            bottom: 0,
+            bgcolor: 'background.paper',
+            pt: 1,
+            pb: 1,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}>
+            <Button
+              variant="contained"
+              fullWidth
+              disabled={state.members.length === 0 && state.calendarIds.length === 0}
+              onClick={() => dispatch({ type: 'SET_STEP', payload: 'config' })}
+            >
+              次へ：検索条件を設定
+            </Button>
+          </Box>
+        </Box>
       )}
       {state.step === 'config' && <SearchConfigForm />}
       {state.step === 'results' && <ResultList />}
