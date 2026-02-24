@@ -8,45 +8,49 @@ import {
   Button,
   CircularProgress,
   IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Menu,
+  MenuItem,
 } from '@mui/material'
-import StarIcon from '@mui/icons-material/Star'
-import StarBorderIcon from '@mui/icons-material/StarBorder'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import GroupAddIcon from '@mui/icons-material/GroupAdd'
+import DeleteIcon from '@mui/icons-material/Delete'
+import AddIcon from '@mui/icons-material/Add'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
-import { FavoriteMemberStorage } from '../../services/favorite-storage'
-import type { Member } from '../../types'
+import { FavoriteGroupStorage } from '../../services/favorite-group-storage'
+import type { Member, FavoriteGroup } from '../../types'
 import type { DirectoryPeopleResponse } from '../../types/api'
 
-const favoriteStorage = new FavoriteMemberStorage()
+const groupStorage = new FavoriteGroupStorage()
 
 export default function MemberPicker() {
   const { state, dispatch } = useAppContext()
   const [inputValue, setInputValue] = useState('')
   const [options, setOptions] = useState<Member[]>([])
   const [searching, setSearching] = useState(false)
-  const [favorites, setFavorites] = useState<Member[]>([])
-  const [favoriteEmails, setFavoriteEmails] = useState<Set<string>>(new Set())
+  const [groups, setGroups] = useState<FavoriteGroup[]>([])
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [addToGroupAnchor, setAddToGroupAnchor] = useState<null | HTMLElement>(null)
+  const [addToGroupMember, setAddToGroupMember] = useState<Member | null>(null)
 
   useEffect(() => {
-    favoriteStorage.getAll().then((favs) => {
-      setFavorites(favs)
-      setFavoriteEmails(new Set(favs.map((f) => f.email)))
-    })
+    const init = async () => {
+      await groupStorage.migrateFromLegacy()
+      setGroups(await groupStorage.getAllGroups())
+    }
+    init()
   }, [])
 
-  const refreshFavorites = async () => {
-    const favs = await favoriteStorage.getAll()
-    setFavorites(favs)
-    setFavoriteEmails(new Set(favs.map((f) => f.email)))
-  }
-
-  const toggleFavorite = async (member: Member) => {
-    if (favoriteEmails.has(member.email)) {
-      await favoriteStorage.remove(member.email)
-    } else {
-      await favoriteStorage.add(member)
-    }
-    await refreshFavorites()
+  const refreshGroups = async () => {
+    setGroups(await groupStorage.getAllGroups())
   }
 
   const handleSearch = async (query: string) => {
@@ -83,6 +87,10 @@ export default function MemberPicker() {
     setOptions([])
   }
 
+  const handleRemoveMember = (email: string) => {
+    dispatch({ type: 'REMOVE_MEMBER', payload: email })
+  }
+
   const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
   const handleAddManualEmail = () => {
@@ -95,9 +103,33 @@ export default function MemberPicker() {
     (o) => !state.members.some((m) => m.email === o.email)
   )
 
-  const unselectedFavorites = favorites.filter(
-    (f) => !state.members.some((m) => m.email === f.email)
-  )
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) return
+    await groupStorage.saveGroup({ name: newGroupName.trim(), members: [] })
+    await refreshGroups()
+    setCreateDialogOpen(false)
+    setNewGroupName('')
+  }
+
+  const handleDeleteGroup = async (groupId: string) => {
+    await groupStorage.deleteGroup(groupId)
+    await refreshGroups()
+  }
+
+  const handleAddToGroup = async (groupId: string) => {
+    if (!addToGroupMember) return
+    await groupStorage.addMemberToGroup(groupId, addToGroupMember)
+    await refreshGroups()
+    setAddToGroupAnchor(null)
+    setAddToGroupMember(null)
+  }
+
+  const handleRemoveFromGroup = async (groupId: string, email: string) => {
+    await groupStorage.removeMemberFromGroup(groupId, email)
+    await refreshGroups()
+  }
+
+  const isSelected = (email: string) => state.members.some((m) => m.email === email)
 
   return (
     <Box>
@@ -105,6 +137,7 @@ export default function MemberPicker() {
         メンバーを選択
       </Typography>
 
+      {/* 選択済みメンバー */}
       {state.members.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           {state.members.map((member) => (
@@ -117,48 +150,119 @@ export default function MemberPicker() {
                     size="small"
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleFavorite(member)
+                      setAddToGroupMember(member)
+                      setAddToGroupAnchor(e.currentTarget)
                     }}
                     sx={{ p: 0, ml: 0.3 }}
                   >
-                    {favoriteEmails.has(member.email) ? (
-                      <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />
-                    ) : (
-                      <StarBorderIcon sx={{ fontSize: 16 }} />
-                    )}
+                    <GroupAddIcon sx={{ fontSize: 16 }} />
                   </IconButton>
                 </Box>
               }
               size="small"
-              onDelete={() =>
-                dispatch({ type: 'REMOVE_MEMBER', payload: member.email })
-              }
+              onDelete={() => handleRemoveMember(member.email)}
             />
           ))}
         </Box>
       )}
 
-      {unselectedFavorites.length > 0 && (
+      {/* グループに追加メニュー */}
+      <Menu
+        anchorEl={addToGroupAnchor}
+        open={Boolean(addToGroupAnchor)}
+        onClose={() => { setAddToGroupAnchor(null); setAddToGroupMember(null) }}
+      >
+        {groups.map((g) => (
+          <MenuItem key={g.id} onClick={() => handleAddToGroup(g.id)}>
+            {g.name}
+          </MenuItem>
+        ))}
+        {groups.length === 0 && (
+          <MenuItem disabled>グループがありません</MenuItem>
+        )}
+      </Menu>
+
+      {/* お気に入りグループ */}
+      {groups.length > 0 && (
         <Box sx={{ mb: 1.5 }}>
           <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-            お気に入り
+            お気に入りグループ
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {unselectedFavorites.map((fav) => (
-              <Chip
-                key={fav.email}
-                label={fav.name}
-                size="small"
-                icon={<StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
-                onClick={() => handleAddMember(fav)}
-                variant="outlined"
-                sx={{ cursor: 'pointer' }}
-              />
-            ))}
-          </Box>
+          {groups.map((group) => (
+            <Accordion key={group.id} disableGutters sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
+                    {group.name}（{group.members.length}）
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id) }}
+                    sx={{ p: 0.3 }}
+                  >
+                    <DeleteIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {group.members.map((m) => (
+                    <Chip
+                      key={m.email}
+                      label={m.name}
+                      size="small"
+                      color={isSelected(m.email) ? 'primary' : 'default'}
+                      variant={isSelected(m.email) ? 'filled' : 'outlined'}
+                      onClick={() => isSelected(m.email) ? handleRemoveMember(m.email) : handleAddMember(m)}
+                      onDelete={() => handleRemoveFromGroup(group.id, m.email)}
+                      sx={{ cursor: 'pointer' }}
+                    />
+                  ))}
+                  {group.members.length === 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      メンバーがいません
+                    </Typography>
+                  )}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          ))}
         </Box>
       )}
 
+      {/* 新規グループ作成ボタン */}
+      <Button
+        size="small"
+        startIcon={<AddIcon />}
+        onClick={() => setCreateDialogOpen(true)}
+        sx={{ mb: 1 }}
+      >
+        新規グループ
+      </Button>
+
+      {/* グループ作成ダイアログ */}
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
+        <DialogTitle>グループを作成</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="グループ名"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ mt: 1 }}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialogOpen(false)}>キャンセル</Button>
+          <Button variant="contained" onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
+            作成
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* メンバー検索 */}
       <Autocomplete
         options={filteredOptions}
         getOptionLabel={(o) => `${o.name} (${o.email})`}
@@ -200,20 +304,10 @@ export default function MemberPicker() {
       />
 
       {isValidEmail(inputValue) && (
-        <Button size="small" onClick={handleAddManualEmail} sx={{ mb: 2 }}>
+        <Button size="small" onClick={handleAddManualEmail} sx={{ mb: 1 }}>
           「{inputValue}」を追加
         </Button>
       )}
-
-      <Button
-        variant="contained"
-        fullWidth
-        disabled={state.members.length === 0 && state.calendarIds.length === 0}
-        onClick={() => dispatch({ type: 'SET_STEP', payload: 'config' })}
-        sx={{ mt: 2 }}
-      >
-        次へ：検索条件を設定
-      </Button>
     </Box>
   )
 }
