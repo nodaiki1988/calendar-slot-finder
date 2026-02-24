@@ -24,6 +24,7 @@ export interface SearchConfig {
     end: string   // HH:mm
   }
   minimumDurationMinutes: number
+  excludeAllDayEvents: boolean
 }
 
 /** メンバー */
@@ -31,6 +32,13 @@ export interface Member {
   email: string
   name: string
   photoUrl?: string
+}
+
+/** お気に入りグループ */
+export interface FavoriteGroup {
+  id: string
+  name: string
+  members: Member[]
 }
 
 /** テンプレート */
@@ -41,12 +49,6 @@ export interface Template {
   calendarIds: string[]
   searchConfig: SearchConfig
   createdAt: string
-}
-
-/** メンバーごとの空き状況（リソース管理用） */
-export interface MemberAvailability {
-  member: Member
-  availableSlots: AvailableSlot[]
 }
 
 /** 繰り返しルール */

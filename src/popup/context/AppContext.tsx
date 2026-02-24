@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react'
-import type { Purpose, Member, SearchConfig, AvailableSlot, Template, MemberAvailability } from '../../types'
+import type { Purpose, Member, SearchConfig, AvailableSlot, Template } from '../../types'
 
 interface AppState {
   step: 'purpose' | 'members' | 'config' | 'results'
@@ -8,7 +8,6 @@ interface AppState {
   calendarIds: string[]
   searchConfig: SearchConfig
   results: AvailableSlot[]
-  memberAvailabilities: MemberAvailability[]
   loading: boolean
   error: string | null
 }
@@ -24,7 +23,6 @@ type Action =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_STEP'; payload: AppState['step'] }
-  | { type: 'SET_MEMBER_AVAILABILITIES'; payload: MemberAvailability[] }
   | { type: 'LOAD_TEMPLATE'; payload: Template }
   | { type: 'RESET' }
 
@@ -36,6 +34,7 @@ const defaultSearchConfig: SearchConfig = {
   daysOfWeek: [1, 2, 3, 4, 5],
   timeRange: { start: '09:00', end: '18:00' },
   minimumDurationMinutes: 30,
+  excludeAllDayEvents: true,
 }
 
 const initialState: AppState = {
@@ -45,7 +44,6 @@ const initialState: AppState = {
   calendarIds: [],
   searchConfig: defaultSearchConfig,
   results: [],
-  memberAvailabilities: [],
   loading: false,
   error: null,
 }
@@ -75,8 +73,6 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, searchConfig: action.payload }
     case 'SET_RESULTS':
       return { ...state, results: action.payload, step: 'results' }
-    case 'SET_MEMBER_AVAILABILITIES':
-      return { ...state, memberAvailabilities: action.payload, step: 'results' }
     case 'SET_LOADING':
       return { ...state, loading: action.payload }
     case 'SET_ERROR':
