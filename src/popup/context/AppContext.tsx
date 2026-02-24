@@ -84,7 +84,10 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         members: action.payload.members,
         calendarIds: action.payload.calendarIds,
-        searchConfig: action.payload.searchConfig,
+        searchConfig: {
+          ...defaultSearchConfig,
+          ...action.payload.searchConfig,
+        },
       }
     case 'RESET':
       return initialState
