@@ -14,7 +14,8 @@ import {
 import { useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
-import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, filterByMinDuration } from '../../logic/slot-finder'
+import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFixedSlots } from '../../logic/slot-finder'
+import { getLocalTimezoneOffset } from '../../utils/format'
 import type { FreeBusyResponse } from '../../types/api'
 import type { TimeSlot } from '../../types'
 
@@ -37,6 +38,8 @@ export default function SearchConfigForm() {
     setError(null)
 
     try {
+      const tzOffset = getLocalTimezoneOffset()
+
       const items = [
         ...state.members.map((m) => ({ id: m.email })),
         ...state.calendarIds.map((id) => ({ id })),
@@ -45,9 +48,9 @@ export default function SearchConfigForm() {
       const result = await sendMessage<FreeBusyResponse>({
         type: 'FETCH_FREE_BUSY',
         payload: {
-          timeMin: `${searchConfig.dateRange.start}T00:00:00+09:00`,
-          timeMax: `${searchConfig.dateRange.end}T23:59:59+09:00`,
-          timeZone: 'Asia/Tokyo',
+          timeMin: `${searchConfig.dateRange.start}T00:00:00${tzOffset}`,
+          timeMax: `${searchConfig.dateRange.end}T23:59:59${tzOffset}`,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           items,
         },
       })
@@ -56,18 +59,22 @@ export default function SearchConfigForm() {
         (cal) => cal.busy || []
       )
 
-      let slots = findAvailableSlots(
-        allBusy,
-        `${searchConfig.dateRange.start}T${searchConfig.timeRange.start}:00+09:00`,
-        `${searchConfig.dateRange.end}T${searchConfig.timeRange.end}:00+09:00`
-      )
+      const startISO = `${searchConfig.dateRange.start}T${searchConfig.timeRange.start}:00${tzOffset}`
+      const endISO = `${searchConfig.dateRange.end}T${searchConfig.timeRange.end}:00${tzOffset}`
+
+      let slots = findAvailableSlots(allBusy, startISO, endISO)
 
       slots = filterByDaysOfWeek(slots, searchConfig.daysOfWeek)
       slots = filterByTimeRange(slots, searchConfig.timeRange.start, searchConfig.timeRange.end)
-      slots = filterByMinDuration(slots, searchConfig.minimumDurationMinutes)
+      slots = splitIntoFixedSlots(slots, searchConfig.minimumDurationMinutes)
 
       if (slots.length === 0) {
-        setError('条件に合う空き時間が見つかりません。条件を変更してください。')
+        setError(
+          `条件に合う空き時間が見つかりません。以下を試してください：\n` +
+          `・日付範囲を広げる\n` +
+          `・所要時間を短くする（現在: ${searchConfig.minimumDurationMinutes}分）\n` +
+          `・時間帯を広げる（現在: ${searchConfig.timeRange.start}〜${searchConfig.timeRange.end}）`
+        )
       } else {
         dispatch({ type: 'SET_RESULTS', payload: slots })
       }
@@ -175,10 +182,10 @@ export default function SearchConfigForm() {
       </Box>
 
       <FormControl size="small" fullWidth sx={{ mb: 2 }}>
-        <InputLabel>最低時間</InputLabel>
+        <InputLabel>MTG時間</InputLabel>
         <Select
           value={searchConfig.minimumDurationMinutes}
-          label="最低時間"
+          label="MTG時間"
           onChange={(e) =>
             dispatch({
               type: 'SET_SEARCH_CONFIG',

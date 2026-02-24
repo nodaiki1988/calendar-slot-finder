@@ -1,15 +1,11 @@
 import { Box, Button, Typography } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import { formatTime } from '../../utils/format'
 import type { AvailableSlot } from '../../types'
 
 interface Props {
   slot: AvailableSlot
   onCreateEvent: (slot: AvailableSlot) => void
-}
-
-function formatTime(isoString: string): string {
-  const d = new Date(isoString)
-  return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatDuration(minutes: number): string {

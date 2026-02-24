@@ -1,26 +1,8 @@
 import type { AvailableSlot } from '../types'
-
-function formatTime(iso: string): string {
-  const d = new Date(iso)
-  const h = d.getHours().toString().padStart(2, '0')
-  const m = d.getMinutes().toString().padStart(2, '0')
-  return `${h}:${m}`
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const days = ['日', '月', '火', '水', '木', '金', '土']
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`
-}
+import { formatDate, formatTime, groupSlotsByDate } from '../utils/format'
 
 export function formatSlotsAsText(slots: AvailableSlot[]): string {
-  const grouped = new Map<string, AvailableSlot[]>()
-  for (const slot of slots) {
-    const date = slot.start.split('T')[0]
-    const existing = grouped.get(date) || []
-    existing.push(slot)
-    grouped.set(date, existing)
-  }
+  const grouped = groupSlotsByDate(slots)
 
   const lines: string[] = ['【空き時間】', '']
   for (const [, dateSlots] of grouped) {

@@ -4,30 +4,16 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import ShareIcon from '@mui/icons-material/Share'
 import SlotCard from './SlotCard'
 import EventCreator from './EventCreator'
+import ShareDialog from './ShareDialog'
 import { useAppContext } from '../context/AppContext'
+import { formatDate, groupSlotsByDate } from '../../utils/format'
 import type { AvailableSlot } from '../../types'
-
-function groupByDate(slots: AvailableSlot[]): Map<string, AvailableSlot[]> {
-  const groups = new Map<string, AvailableSlot[]>()
-  for (const slot of slots) {
-    const date = slot.start.split('T')[0]
-    const existing = groups.get(date) || []
-    existing.push(slot)
-    groups.set(date, existing)
-  }
-  return groups
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  const days = ['日', '月', '火', '水', '木', '金', '土']
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`
-}
 
 export default function ResultList() {
   const { state } = useAppContext()
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
-  const grouped = groupByDate(state.results)
+  const [shareOpen, setShareOpen] = useState(false)
+  const grouped = groupSlotsByDate(state.results)
 
   const handleOverlay = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -74,7 +60,7 @@ export default function ResultList() {
         <Button
           variant="outlined"
           startIcon={<ShareIcon />}
-          onClick={() => {/* Task 14で実装 */}}
+          onClick={() => setShareOpen(true)}
           fullWidth
         >
           共有
@@ -86,6 +72,7 @@ export default function ResultList() {
         open={selectedSlot !== null}
         onClose={() => setSelectedSlot(null)}
       />
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
     </Box>
   )
 }

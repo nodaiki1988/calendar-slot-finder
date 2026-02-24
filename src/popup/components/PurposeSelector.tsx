@@ -42,7 +42,7 @@ export default function PurposeSelector() {
         {purposes.map((p) => (
           <Card key={p.value} variant="outlined" sx={{ borderRadius: 3 }}>
             <CardActionArea onClick={() => dispatch({ type: 'SET_PURPOSE', payload: p.value })}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, height: 80 }}>
                 <Box sx={{ color: 'primary.main' }}>{p.icon}</Box>
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
