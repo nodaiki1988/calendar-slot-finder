@@ -111,13 +111,25 @@ chrome.runtime.onMessage.addListener(
   }
 )
 
-function formatTime(d: Date): string {
-  return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+/**
+ * ISO文字列から直接ローカル時刻 "HH:mm" を抽出する
+ * new Date()のブラウザローカル変換を避け、元のTZオフセットを尊重
+ */
+function formatTimeFromISO(iso: string): string {
+  const timePart = iso.split('T')[1]
+  const [hh, mm] = timePart.split(':')
+  return `${hh}:${mm}`
 }
 
-function formatDate(d: Date): string {
+/**
+ * ISO文字列から直接ローカル日付 "M/D(曜日)" を抽出する
+ */
+function formatDateFromISO(iso: string): string {
   const days = ['日', '月', '火', '水', '木', '金', '土']
-  return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`
+  const datePart = iso.split('T')[0]
+  const [year, month, day] = datePart.split('-').map(Number)
+  const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${days[d.getUTCDay()]})`
 }
 
 function showOverlay(slots: AvailableSlot[]) {
@@ -144,19 +156,16 @@ function showOverlay(slots: AvailableSlot[]) {
   list.className = 'csf-overlay-list'
 
   for (const slot of slots) {
-    const start = new Date(slot.start)
-    const end = new Date(slot.end)
-
     const slotEl = document.createElement('div')
     slotEl.className = 'csf-overlay-slot'
 
     const dateEl = document.createElement('span')
     dateEl.className = 'csf-overlay-date'
-    dateEl.textContent = formatDate(start)
+    dateEl.textContent = formatDateFromISO(slot.start)
 
     const timeEl = document.createElement('span')
     timeEl.className = 'csf-overlay-time'
-    timeEl.textContent = `${formatTime(start)} - ${formatTime(end)}`
+    timeEl.textContent = `${formatTimeFromISO(slot.start)} - ${formatTimeFromISO(slot.end)}`
 
     slotEl.appendChild(dateEl)
     slotEl.appendChild(timeEl)

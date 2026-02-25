@@ -40,12 +40,17 @@ export default function SearchConfigForm() {
     setError(null)
 
     try {
-      const tzOffset = getLocalTimezoneOffset()
-
       const items = [
         ...state.members.map((m) => ({ id: m.email })),
         ...state.calendarIds.map((id) => ({ id })),
       ]
+
+      if (items.length === 0) {
+        setError('メンバーまたはカレンダーを選択してください')
+        return
+      }
+
+      const tzOffset = getLocalTimezoneOffset()
 
       const result = await sendMessage<FreeBusyResponse>({
         type: 'FETCH_FREE_BUSY',
@@ -56,6 +61,17 @@ export default function SearchConfigForm() {
           items,
         },
       })
+
+      // カレンダーごとのエラーを検出して警告表示
+      const calendarErrors: string[] = []
+      for (const [id, cal] of Object.entries(result.calendars)) {
+        if (cal.errors && cal.errors.length > 0) {
+          calendarErrors.push(id)
+        }
+      }
+      if (calendarErrors.length > 0) {
+        setError(`以下のカレンダーの情報を取得できませんでした: ${calendarErrors.join(', ')}`)
+      }
 
       const startISO = `${searchConfig.dateRange.start}T${searchConfig.timeRange.start}:00${tzOffset}`
       const endISO = `${searchConfig.dateRange.end}T${searchConfig.timeRange.end}:00${tzOffset}`

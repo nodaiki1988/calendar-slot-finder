@@ -36,7 +36,10 @@ export default function ShareDialog({ open, onClose, slots }: Props) {
   }
 
   const handleEmail = () => {
-    const emails = state.members.map((m) => m.email)
+    // カレンダーリソースID（group.calendar.google.com等）を除外し、人のメールのみ送信
+    const emails = state.members
+      .map((m) => m.email)
+      .filter((e) => !e.endsWith('.calendar.google.com'))
     const url = formatSlotsAsMailto(slots, emails)
     window.open(url)
   }

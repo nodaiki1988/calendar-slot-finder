@@ -8,8 +8,39 @@ import {
   splitIntoFixedSlots,
   filterAllDayEvents,
   filterByHolidays,
+  extractTimezone,
 } from '../slot-finder'
 import type { TimeSlot } from '../../types'
+
+describe('extractTimezone', () => {
+  it('標準的なオフセット "+09:00" を抽出する', () => {
+    expect(extractTimezone('2026-02-24T09:00:00+09:00')).toBe('+09:00')
+  })
+
+  it('負のオフセット "-05:00" を抽出する', () => {
+    expect(extractTimezone('2026-02-24T09:00:00-05:00')).toBe('-05:00')
+  })
+
+  it('小数点付き秒 ".000" ありでもオフセットを抽出する', () => {
+    expect(extractTimezone('2026-02-24T09:00:00.000+09:00')).toBe('+09:00')
+  })
+
+  it('小数点付き秒 ".123456" ありでもオフセットを抽出する', () => {
+    expect(extractTimezone('2026-02-24T09:00:00.123456+09:00')).toBe('+09:00')
+  })
+
+  it('"Z" 終端を正しく返す', () => {
+    expect(extractTimezone('2026-02-24T00:00:00Z')).toBe('Z')
+  })
+
+  it('小数点付き秒 + "Z" 終端を正しく返す', () => {
+    expect(extractTimezone('2026-02-24T00:00:00.000Z')).toBe('Z')
+  })
+
+  it('タイムゾーン情報なしは空文字を返す', () => {
+    expect(extractTimezone('2026-02-24T09:00:00')).toBe('')
+  })
+})
 
 describe('mergeBusySlots', () => {
   it('空配列の場合は空配列を返す', () => {

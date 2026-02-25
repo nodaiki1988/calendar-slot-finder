@@ -3,9 +3,18 @@ import holiday_jp from '@holiday-jp/holiday_jp'
 
 /**
  * ISO 8601 文字列からタイムゾーンオフセット部分を抽出する
- * 例: "2026-02-24T09:00:00+09:00" -> "+09:00"
+ *
+ * 対応フォーマット:
+ *   "2026-02-24T09:00:00+09:00"       → "+09:00"
+ *   "2026-02-24T09:00:00.000+09:00"   → "+09:00" (小数点付き秒)
+ *   "2026-02-24T09:00:00Z"            → "Z"
+ *   "2026-02-24T09:00:00.000Z"        → "Z" (小数点付き秒+Z)
+ *
+ * Google Calendar APIは小数点付き秒を返す場合があるため、
+ * 末尾の ".000" 等のミリ秒部分の前後どちらにオフセットがあっても対応する
  */
-function extractTimezone(isoString: string): string {
+export function extractTimezone(isoString: string): string {
+  // 小数点付き秒の後ろ、または秒の直後のオフセットにマッチ
   const match = isoString.match(/([+-]\d{2}:\d{2})$/)
   if (match) return match[1]
   if (isoString.endsWith('Z')) return 'Z'
