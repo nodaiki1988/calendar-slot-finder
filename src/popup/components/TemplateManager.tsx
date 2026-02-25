@@ -24,6 +24,22 @@ import type { Template } from '../../types'
 
 const storage = new TemplateStorage()
 
+const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
+
+function formatTemplateInfo(t: Template): string {
+  const parts: string[] = []
+  if (t.members.length > 0) {
+    parts.push(`${t.members.length}人`)
+  }
+  if (t.searchConfig) {
+    const days = t.searchConfig.daysOfWeek.map((d) => DAY_LABELS[d]).join('')
+    const time = `${t.searchConfig.timeRange.start}〜${t.searchConfig.timeRange.end}`
+    parts.push(`${days} ${time}`)
+    parts.push(`${t.searchConfig.minimumDurationMinutes}分`)
+  }
+  return parts.join(' / ')
+}
+
 export default function TemplateManager() {
   const { state, dispatch } = useAppContext()
   const [templates, setTemplates] = useState<Template[]>([])
@@ -62,12 +78,11 @@ export default function TemplateManager() {
   }
 
   return (
-    <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+    <Box sx={{ display: 'flex', gap: 0.5 }}>
       <Button
         size="small"
         startIcon={<BookmarkBorderIcon />}
         onClick={() => setSaveOpen(true)}
-        disabled={state.members.length === 0}
       >
         保存
       </Button>
@@ -88,12 +103,13 @@ export default function TemplateManager() {
         <DialogTitle>テンプレートを保存</DialogTitle>
         <DialogContent>
           <TextField
-            label="テンプレート名"
+            label="テンプレート名（例: 定例会議、夜の交流会）"
             value={name}
             onChange={(e) => setName(e.target.value)}
             fullWidth
             size="small"
             sx={{ mt: 1 }}
+            autoFocus
           />
         </DialogContent>
         <DialogActions>
@@ -104,7 +120,7 @@ export default function TemplateManager() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={loadOpen} onClose={() => setLoadOpen(false)}>
+      <Dialog open={loadOpen} onClose={() => setLoadOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>テンプレートを選択</DialogTitle>
         <DialogContent>
           <List>
@@ -121,7 +137,7 @@ export default function TemplateManager() {
                 <ListItemButton onClick={() => handleLoad(t)}>
                   <ListItemText
                     primary={t.name}
-                    secondary={`${t.members.length}人`}
+                    secondary={formatTemplateInfo(t)}
                   />
                 </ListItemButton>
               </ListItem>

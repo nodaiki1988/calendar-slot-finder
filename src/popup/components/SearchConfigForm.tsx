@@ -24,6 +24,7 @@ import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFix
 import { getLocalTimezoneOffset } from '../../utils/format'
 import { SearchHistoryStorage } from '../../services/search-history'
 import type { FreeBusyResponse } from '../../types/api'
+import TemplateManager from './TemplateManager'
 import type { TimeSlot } from '../../types'
 
 const searchHistory = new SearchHistoryStorage()
@@ -69,6 +70,7 @@ export default function SearchConfigForm() {
   const { state, dispatch } = useAppContext()
   const { searchConfig } = state
   const [error, setError] = useState<string | null>(null)
+  const [errorSuggestions, setErrorSuggestions] = useState<string[]>([])
 
   const setDateRange = (range: { start: string; end: string }) => {
     dispatch({
@@ -87,6 +89,7 @@ export default function SearchConfigForm() {
   const handleSearch = async () => {
     dispatch({ type: 'SET_LOADING', payload: true })
     setError(null)
+    setErrorSuggestions([])
 
     try {
       const items = [
@@ -159,11 +162,13 @@ export default function SearchConfigForm() {
 
       if (slots.length === 0) {
         setError(
-          `条件に合う空き時間が見つかりません。以下を試してください：\n` +
-          `・日付範囲を広げる\n` +
-          `・所要時間を短くする（現在: ${searchConfig.minimumDurationMinutes}分）\n` +
-          `・時間帯を広げる（現在: ${searchConfig.timeRange.start}〜${searchConfig.timeRange.end}）`
+          `条件に合う空き時間が見つかりません。以下を試してください：`
         )
+        setErrorSuggestions([
+          `日付範囲を広げる`,
+          `所要時間を短くする（現在: ${searchConfig.minimumDurationMinutes}分）`,
+          `時間帯を広げる（現在: ${searchConfig.timeRange.start}〜${searchConfig.timeRange.end}）`,
+        ])
       } else {
         dispatch({ type: 'SET_RESULTS', payload: slots })
         searchHistory.save({
@@ -181,9 +186,12 @@ export default function SearchConfigForm() {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-        検索条件
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          検索条件
+        </Typography>
+        <TemplateManager />
+      </Box>
 
       <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
         <Chip label="今週" size="small" variant="outlined" clickable onClick={() => setDateRange(getThisWeekRange())} />
@@ -342,7 +350,18 @@ export default function SearchConfigForm() {
 
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          {error}
+          <Typography variant="body2" sx={{ fontWeight: 500, mb: errorSuggestions.length > 0 ? 0.5 : 0 }}>
+            {error}
+          </Typography>
+          {errorSuggestions.length > 0 && (
+            <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+              {errorSuggestions.map((s, i) => (
+                <Typography key={i} component="li" variant="body2" sx={{ mb: 0.3 }}>
+                  {s}
+                </Typography>
+              ))}
+            </Box>
+          )}
         </Alert>
       )}
 
