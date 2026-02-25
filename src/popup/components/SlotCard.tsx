@@ -7,7 +7,7 @@ interface Props {
   slot: AvailableSlot
   onCreateEvent: (slot: AvailableSlot) => void
   checked?: boolean
-  onToggle?: () => void
+  onToggle?: (e: React.MouseEvent) => void
 }
 
 function formatDuration(minutes: number): string {
@@ -36,7 +36,7 @@ export default function SlotCard({ slot, onCreateEvent, checked, onToggle }: Pro
       {onToggle && (
         <Checkbox
           checked={checked}
-          onChange={onToggle}
+          onClick={onToggle}
           size="small"
           sx={{ p: 0.5, mr: 1 }}
         />

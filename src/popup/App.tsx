@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography, Button } from '@mui/material'
+import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography, Button, Stepper, Step, StepLabel } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { AppProvider, useAppContext } from './context/AppContext'
 import PurposeSelector from './components/PurposeSelector'
@@ -72,6 +72,26 @@ function AppContent() {
           Calendar Slot Finder
         </Typography>
       </Box>
+
+      {state.step !== 'purpose' && (() => {
+        const isPersonal = state.purpose === 'personal'
+        const steps = isPersonal
+          ? ['目的選択', '検索条件', '検索結果']
+          : ['目的選択', 'メンバー選択', '検索条件', '検索結果']
+        const stepMap = isPersonal
+          ? { purpose: 0, config: 1, results: 2 }
+          : { purpose: 0, members: 1, config: 2, results: 3 }
+        const activeStep = stepMap[state.step as keyof typeof stepMap] ?? 0
+        return (
+          <Stepper activeStep={activeStep} alternativeLabel sx={{ py: 0.5, mb: 1, flexShrink: 0 }}>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel slotProps={{ label: { sx: { fontSize: '0.7rem' } } }}>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        )
+      })()}
 
       {state.step === 'purpose' && <PurposeSelector />}
       {state.step === 'members' && (

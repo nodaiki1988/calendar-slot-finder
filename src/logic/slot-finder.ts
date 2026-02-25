@@ -296,28 +296,38 @@ export function splitIntoFixedSlots(
 /**
  * 日本の祝日に該当するスロットを除外する
  * dateRangeStart, dateRangeEnd は "YYYY-MM-DD" 形式
+ * 除外された祝日名のリストも返す
  */
 export function filterByHolidays(
   slots: AvailableSlot[],
   dateRangeStart: string,
   dateRangeEnd: string
-): AvailableSlot[] {
+): { slots: AvailableSlot[]; excludedHolidays: string[] } {
   const [sy, sm, sd] = dateRangeStart.split('-').map(Number)
   const [ey, em, ed] = dateRangeEnd.split('-').map(Number)
   const holidays = holiday_jp.between(
     new Date(sy, sm - 1, sd),
     new Date(ey, em - 1, ed)
   )
-  const holidayDates = new Set(
-    holidays.map((h) => {
-      const d = h.date
-      const yyyy = d.getFullYear()
-      const mm = String(d.getMonth() + 1).padStart(2, '0')
-      const dd = String(d.getDate()).padStart(2, '0')
-      return `${yyyy}-${mm}-${dd}`
-    })
-  )
-  return slots.filter((slot) => !holidayDates.has(getLocalDatePart(slot.start)))
+  const holidayMap = new Map<string, string>()
+  for (const h of holidays) {
+    const d = h.date
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    holidayMap.set(`${yyyy}-${mm}-${dd}`, h.name)
+  }
+  const excludedNames = new Set<string>()
+  const filtered = slots.filter((slot) => {
+    const datePart = getLocalDatePart(slot.start)
+    const holidayName = holidayMap.get(datePart)
+    if (holidayName) {
+      excludedNames.add(holidayName)
+      return false
+    }
+    return true
+  })
+  return { slots: filtered, excludedHolidays: [...excludedNames] }
 }
 
 /**

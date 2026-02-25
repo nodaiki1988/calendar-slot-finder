@@ -345,9 +345,10 @@ describe('filterByHolidays', () => {
       { start: '2026-02-12T10:00:00+09:00', end: '2026-02-12T11:00:00+09:00', durationMinutes: 60 },
     ]
     const result = filterByHolidays(slots, '2026-02-09', '2026-02-13')
-    expect(result).toHaveLength(2)
-    expect(result[0].start).toContain('2026-02-10')
-    expect(result[1].start).toContain('2026-02-12')
+    expect(result.slots).toHaveLength(2)
+    expect(result.slots[0].start).toContain('2026-02-10')
+    expect(result.slots[1].start).toContain('2026-02-12')
+    expect(result.excludedHolidays).toContain('建国記念の日')
   })
 
   it('祝日がない期間はそのまま返る', () => {
@@ -356,11 +357,13 @@ describe('filterByHolidays', () => {
       { start: '2026-02-25T10:00:00+09:00', end: '2026-02-25T11:00:00+09:00', durationMinutes: 60 },
     ]
     const result = filterByHolidays(slots, '2026-02-23', '2026-02-27')
-    expect(result).toHaveLength(2)
+    expect(result.slots).toHaveLength(2)
+    expect(result.excludedHolidays).toHaveLength(0)
   })
 
   it('空配列は空配列を返す', () => {
     const result = filterByHolidays([], '2026-02-01', '2026-02-28')
-    expect(result).toEqual([])
+    expect(result.slots).toEqual([])
+    expect(result.excludedHolidays).toEqual([])
   })
 })

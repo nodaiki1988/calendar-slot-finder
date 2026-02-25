@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Box, Typography, Button, Divider } from '@mui/material'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { Box, Typography, Button, Chip, Divider } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
 import ShareIcon from '@mui/icons-material/Share'
 import SelectAllIcon from '@mui/icons-material/SelectAll'
@@ -16,6 +17,7 @@ export default function ResultList() {
   const [selectedSlot, setSelectedSlot] = useState<AvailableSlot | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+  const lastClickedIndex = useRef<number | null>(null)
 
   // results変更時に全選択でリセット
   useEffect(() => {
@@ -48,16 +50,34 @@ export default function ResultList() {
     setSelectedIndices(new Set())
   }
 
-  const handleToggle = (index: number) => {
-    setSelectedIndices((prev) => {
-      const next = new Set(prev)
-      if (next.has(index)) {
-        next.delete(index)
-      } else {
-        next.add(index)
-      }
-      return next
-    })
+  const handleToggle = (index: number, e: React.MouseEvent) => {
+    if (e.shiftKey && lastClickedIndex.current !== null) {
+      const from = Math.min(lastClickedIndex.current, index)
+      const to = Math.max(lastClickedIndex.current, index)
+      const shouldSelect = !selectedIndices.has(index)
+      setSelectedIndices((prev) => {
+        const next = new Set(prev)
+        for (let i = from; i <= to; i++) {
+          if (shouldSelect) {
+            next.add(i)
+          } else {
+            next.delete(i)
+          }
+        }
+        return next
+      })
+    } else {
+      setSelectedIndices((prev) => {
+        const next = new Set(prev)
+        if (next.has(index)) {
+          next.delete(index)
+        } else {
+          next.add(index)
+        }
+        return next
+      })
+    }
+    lastClickedIndex.current = index
   }
 
   const handleOverlay = () => {
@@ -90,6 +110,17 @@ export default function ResultList() {
           </Box>
         </Box>
 
+        {state.excludedHolidays.length > 0 && (
+          <Chip
+            icon={<InfoOutlinedIcon />}
+            label={`${state.excludedHolidays.length}件の祝日を除外しました（${state.excludedHolidays.join('、')}）`}
+            size="small"
+            variant="outlined"
+            color="info"
+            sx={{ mb: 1 }}
+          />
+        )}
+
         {groupedWithIndex.map(([date, entries]) => (
           <Box key={date} sx={{ mb: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
@@ -101,7 +132,7 @@ export default function ResultList() {
                 slot={slot}
                 onCreateEvent={setSelectedSlot}
                 checked={selectedIndices.has(index)}
-                onToggle={() => handleToggle(index)}
+                onToggle={(e) => handleToggle(index, e)}
               />
             ))}
             <Divider sx={{ mt: 1 }} />

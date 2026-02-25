@@ -12,21 +12,68 @@ import {
   Alert,
   Checkbox,
   FormControlLabel,
+  LinearProgress,
+  CircularProgress,
+  Chip,
+  Tooltip,
 } from '@mui/material'
 import { useState } from 'react'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
 import { findAvailableSlots, filterByDaysOfWeek, filterByTimeRange, splitIntoFixedSlots, filterAllDayEvents, filterByHolidays } from '../../logic/slot-finder'
 import { getLocalTimezoneOffset } from '../../utils/format'
+import { SearchHistoryStorage } from '../../services/search-history'
 import type { FreeBusyResponse } from '../../types/api'
 import type { TimeSlot } from '../../types'
 
+const searchHistory = new SearchHistoryStorage()
+
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function getThisWeekRange(): { start: string; end: string } {
+  const today = new Date()
+  const dow = today.getDay() // 0=日
+  const daysUntilFri = dow <= 5 ? 5 - dow : 5 + 7 - dow
+  const fri = new Date(today)
+  fri.setDate(today.getDate() + daysUntilFri)
+  return { start: toDateStr(today), end: toDateStr(fri) }
+}
+
+function getNextWeekRange(): { start: string; end: string } {
+  const today = new Date()
+  const dow = today.getDay()
+  const daysUntilMon = dow === 0 ? 1 : 8 - dow
+  const mon = new Date(today)
+  mon.setDate(today.getDate() + daysUntilMon)
+  const fri = new Date(mon)
+  fri.setDate(mon.getDate() + 4)
+  return { start: toDateStr(mon), end: toDateStr(fri) }
+}
+
+function getThisMonthRange(): { start: string; end: string } {
+  const today = new Date()
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  return { start: toDateStr(today), end: toDateStr(lastDay) }
+}
 
 export default function SearchConfigForm() {
   const { state, dispatch } = useAppContext()
   const { searchConfig } = state
   const [error, setError] = useState<string | null>(null)
+
+  const setDateRange = (range: { start: string; end: string }) => {
+    dispatch({
+      type: 'SET_SEARCH_CONFIG',
+      payload: { ...searchConfig, dateRange: range },
+    })
+  }
 
   const handleDaysChange = (_e: unknown, newDays: number[]) => {
     dispatch({
@@ -101,7 +148,11 @@ export default function SearchConfigForm() {
       slots = filterByTimeRange(slots, searchConfig.timeRange.start, searchConfig.timeRange.end)
       slots = splitIntoFixedSlots(slots, searchConfig.minimumDurationMinutes)
       if (searchConfig.excludeHolidays) {
-        slots = filterByHolidays(slots, searchConfig.dateRange.start, searchConfig.dateRange.end)
+        const holidayResult = filterByHolidays(slots, searchConfig.dateRange.start, searchConfig.dateRange.end)
+        slots = holidayResult.slots
+        dispatch({ type: 'SET_EXCLUDED_HOLIDAYS', payload: holidayResult.excludedHolidays })
+      } else {
+        dispatch({ type: 'SET_EXCLUDED_HOLIDAYS', payload: [] })
       }
 
       if (slots.length === 0) {
@@ -113,6 +164,11 @@ export default function SearchConfigForm() {
         )
       } else {
         dispatch({ type: 'SET_RESULTS', payload: slots })
+        searchHistory.save({
+          members: state.members,
+          calendarIds: state.calendarIds,
+          searchConfig,
+        }).catch(() => {})
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '検索中にエラーが発生しました')
@@ -126,6 +182,12 @@ export default function SearchConfigForm() {
       <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
         検索条件
       </Typography>
+
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+        <Chip label="今週" size="small" variant="outlined" clickable onClick={() => setDateRange(getThisWeekRange())} />
+        <Chip label="来週" size="small" variant="outlined" clickable onClick={() => setDateRange(getNextWeekRange())} />
+        <Chip label="今月" size="small" variant="outlined" clickable onClick={() => setDateRange(getThisMonthRange())} />
+      </Box>
 
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <TextField
@@ -257,22 +319,24 @@ export default function SearchConfigForm() {
         sx={{ mb: 1 }}
       />
 
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={searchConfig.excludeHolidays}
-            onChange={(e) =>
-              dispatch({
-                type: 'SET_SEARCH_CONFIG',
-                payload: { ...searchConfig, excludeHolidays: e.target.checked },
-              })
-            }
-            size="small"
-          />
-        }
-        label="祝日を除外する"
-        sx={{ mb: 2 }}
-      />
+      <Tooltip title="検索期間内の祝日（例: 春分の日、天皇誕生日など）を候補から自動的に除外します" placement="top">
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={searchConfig.excludeHolidays}
+              onChange={(e) =>
+                dispatch({
+                  type: 'SET_SEARCH_CONFIG',
+                  payload: { ...searchConfig, excludeHolidays: e.target.checked },
+                })
+              }
+              size="small"
+            />
+          }
+          label="祝日を除外する"
+          sx={{ mb: 2 }}
+        />
+      </Tooltip>
 
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -286,8 +350,10 @@ export default function SearchConfigForm() {
         onClick={handleSearch}
         disabled={state.loading}
       >
+        {state.loading && <CircularProgress size={20} sx={{ mr: 1 }} color="inherit" />}
         {state.loading ? '検索中...' : '空き時間を検索'}
       </Button>
+      {state.loading && <LinearProgress sx={{ mt: 1 }} />}
     </Box>
   )
 }

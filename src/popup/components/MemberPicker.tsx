@@ -28,6 +28,7 @@ import AddIcon from '@mui/icons-material/Add'
 import { useAppContext } from '../context/AppContext'
 import { sendMessage } from '../hooks/useApi'
 import { FavoriteGroupStorage } from '../../services/favorite-group-storage'
+import ConfirmDialog from './ConfirmDialog'
 import type { Member, FavoriteGroup } from '../../types'
 import type { DirectoryPeopleResponse } from '../../types/api'
 
@@ -43,6 +44,7 @@ export default function MemberPicker() {
   const [newGroupName, setNewGroupName] = useState('')
   const [addToGroupAnchor, setAddToGroupAnchor] = useState<null | HTMLElement>(null)
   const [addToGroupMember, setAddToGroupMember] = useState<Member | null>(null)
+  const [deleteGroupTarget, setDeleteGroupTarget] = useState<FavoriteGroup | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -114,8 +116,10 @@ export default function MemberPicker() {
     setNewGroupName('')
   }
 
-  const handleDeleteGroup = async (groupId: string) => {
-    await groupStorage.deleteGroup(groupId)
+  const handleDeleteGroup = async () => {
+    if (!deleteGroupTarget) return
+    await groupStorage.deleteGroup(deleteGroupTarget.id)
+    setDeleteGroupTarget(null)
     await refreshGroups()
   }
 
@@ -145,6 +149,11 @@ export default function MemberPicker() {
       </Typography>
 
       {/* 選択済みメンバー */}
+      {state.members.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          メンバーを検索して追加してください。名前やメールアドレスで検索できます。
+        </Typography>
+      )}
       {state.members.length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
           {state.members.map((member) => (
@@ -209,7 +218,7 @@ export default function MemberPicker() {
                   </Typography>
                   <IconButton
                     size="small"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id) }}
+                    onClick={(e) => { e.stopPropagation(); setDeleteGroupTarget(group) }}
                     sx={{ p: 0.3 }}
                   >
                     <DeleteIcon sx={{ fontSize: 16 }} />
@@ -240,6 +249,12 @@ export default function MemberPicker() {
             </Accordion>
           ))}
         </Box>
+      )}
+
+      {groups.length === 0 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          よく使うメンバーの組み合わせをグループとして保存できます
+        </Typography>
       )}
 
       {/* 新規グループ作成ボタン */}
@@ -341,6 +356,14 @@ export default function MemberPicker() {
           「{inputValue}」を追加
         </Button>
       )}
+
+      <ConfirmDialog
+        open={deleteGroupTarget !== null}
+        title="グループの削除"
+        message={`グループ「${deleteGroupTarget?.name ?? ''}」を削除しますか？`}
+        onConfirm={handleDeleteGroup}
+        onCancel={() => setDeleteGroupTarget(null)}
+      />
     </Box>
   )
 }

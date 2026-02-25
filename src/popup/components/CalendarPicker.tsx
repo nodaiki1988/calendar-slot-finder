@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import {
   Box,
+  Button,
   Checkbox,
+  Chip,
+  Divider,
   FormControlLabel,
   FormGroup,
   Typography,
@@ -12,6 +15,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import GroupAddIcon from '@mui/icons-material/GroupAdd'
 import CheckIcon from '@mui/icons-material/Check'
 import { useAppContext } from '../context/AppContext'
@@ -32,6 +36,7 @@ export default function CalendarPicker() {
   const { state, dispatch } = useAppContext()
   const [calendars, setCalendars] = useState<CalendarItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [groups, setGroups] = useState<FavoriteGroup[]>([])
   const [addToGroupAnchor, setAddToGroupAnchor] = useState<null | HTMLElement>(null)
   const [addToGroupCalendar, setAddToGroupCalendar] = useState<CalendarItem | null>(null)
@@ -61,6 +66,8 @@ export default function CalendarPicker() {
   }
 
   const loadCalendars = async () => {
+    setLoading(true)
+    setLoadError(false)
     try {
       const result = await sendMessage<CalendarListResponse>({
         type: 'FETCH_CALENDAR_LIST',
@@ -78,7 +85,7 @@ export default function CalendarPicker() {
         })
       }
     } catch {
-      // エラー時は空リスト
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -98,17 +105,32 @@ export default function CalendarPicker() {
       <Typography variant="subtitle2" gutterBottom>
         カレンダー
       </Typography>
+      {loadError && (
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            カレンダーの読み込みに失敗しました。再読み込みしてください。
+          </Typography>
+          <Button size="small" startIcon={<RefreshIcon />} onClick={loadCalendars}>
+            再読み込み
+          </Button>
+        </Box>
+      )}
       <FormGroup>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={state.calendarIds.includes('primary')}
-              onChange={() => handleToggle('primary')}
-              size="small"
-            />
-          }
-          label="自分のカレンダー"
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <FormControlLabel
+            sx={{ flex: 1, mr: 0 }}
+            control={
+              <Checkbox
+                checked={state.calendarIds.includes('primary')}
+                onChange={() => handleToggle('primary')}
+                size="small"
+              />
+            }
+            label="自分のカレンダー"
+          />
+          <Chip label="メイン" size="small" color="primary" variant="outlined" sx={{ ml: 0.5 }} />
+        </Box>
+        {calendars.length > 0 && <Divider sx={{ my: 0.5 }} />}
         {calendars.map((cal) => (
           <Box key={cal.id} sx={{ display: 'flex', alignItems: 'center' }}>
             <FormControlLabel

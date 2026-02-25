@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react'
 import type { Purpose, Member, SearchConfig, AvailableSlot, Template } from '../../types'
+import type { SearchHistoryEntry } from '../../services/search-history'
 
 interface AppState {
   step: 'purpose' | 'members' | 'config' | 'results'
@@ -8,6 +9,7 @@ interface AppState {
   calendarIds: string[]
   searchConfig: SearchConfig
   results: AvailableSlot[]
+  excludedHolidays: string[]
   loading: boolean
   error: string | null
 }
@@ -20,10 +22,12 @@ type Action =
   | { type: 'SET_CALENDAR_IDS'; payload: string[] }
   | { type: 'SET_SEARCH_CONFIG'; payload: SearchConfig }
   | { type: 'SET_RESULTS'; payload: AvailableSlot[] }
+  | { type: 'SET_EXCLUDED_HOLIDAYS'; payload: string[] }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_STEP'; payload: AppState['step'] }
   | { type: 'LOAD_TEMPLATE'; payload: Template }
+  | { type: 'LOAD_HISTORY'; payload: SearchHistoryEntry }
   | { type: 'RESET' }
 
 const defaultSearchConfig: SearchConfig = {
@@ -45,6 +49,7 @@ const initialState: AppState = {
   calendarIds: [],
   searchConfig: defaultSearchConfig,
   results: [],
+  excludedHolidays: [],
   loading: false,
   error: null,
 }
@@ -74,6 +79,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, searchConfig: action.payload }
     case 'SET_RESULTS':
       return { ...state, results: action.payload, step: 'results' }
+    case 'SET_EXCLUDED_HOLIDAYS':
+      return { ...state, excludedHolidays: action.payload }
     case 'SET_LOADING':
       return { ...state, loading: action.payload }
     case 'SET_ERROR':
@@ -89,6 +96,18 @@ function reducer(state: AppState, action: Action): AppState {
           ...defaultSearchConfig,
           ...action.payload.searchConfig,
         },
+      }
+    case 'LOAD_HISTORY':
+      return {
+        ...state,
+        members: action.payload.members,
+        calendarIds: action.payload.calendarIds,
+        searchConfig: {
+          ...defaultSearchConfig,
+          ...action.payload.searchConfig,
+        },
+        purpose: action.payload.members.length > 0 ? 'meeting' : 'personal',
+        step: 'config',
       }
     case 'RESET':
       return initialState
