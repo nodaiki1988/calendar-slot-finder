@@ -66,6 +66,8 @@ export default function ResultList() {
         chrome.tabs.sendMessage(tabs[0].id, {
           type: 'SHOW_OVERLAY',
           payload: state.results,
+        }).catch(() => {
+          // content scriptが未ロードのタブでは送信失敗する（無視）
         })
       }
     })

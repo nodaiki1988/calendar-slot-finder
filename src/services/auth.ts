@@ -12,9 +12,11 @@ export async function revokeAuthToken(): Promise<void> {
     const result = await chrome.identity.getAuthToken({ interactive: false })
     if (result.token) {
       await chrome.identity.removeCachedAuthToken({ token: result.token })
-      await fetch(
-        `https://accounts.google.com/o/oauth2/revoke?token=${encodeURIComponent(result.token)}`
-      ).catch(() => {})
+      await fetch('https://oauth2.googleapis.com/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `token=${encodeURIComponent(result.token)}`,
+      }).catch(() => {})
     }
   } catch {
     // ignore

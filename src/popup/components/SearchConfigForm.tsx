@@ -50,6 +50,16 @@ export default function SearchConfigForm() {
         return
       }
 
+      if (searchConfig.dateRange.start > searchConfig.dateRange.end) {
+        setError('開始日は終了日より前に設定してください')
+        return
+      }
+
+      if (searchConfig.timeRange.start >= searchConfig.timeRange.end) {
+        setError('開始時間は終了時間より前に設定してください')
+        return
+      }
+
       const tzOffset = getLocalTimezoneOffset()
 
       const result = await sendMessage<FreeBusyResponse>({

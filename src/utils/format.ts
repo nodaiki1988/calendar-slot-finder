@@ -41,7 +41,9 @@ export function groupSlotsByDate(slots: AvailableSlot[]): Map<string, AvailableS
  * 例: 日本 → "+09:00", 米国東部（EST） → "-05:00"
  */
 export function getLocalTimezoneOffset(): string {
-  const offset = new Date().getTimezoneOffset() // 分単位、UTCからの差（日本は -540）
+  // getTimezoneOffset(): ローカル→UTCの差を分で返す（ISO 8601とは符号が逆）
+  // 日本(UTC+9) → -540, 米国東部(UTC-5) → +300
+  const offset = new Date().getTimezoneOffset()
   const sign = offset <= 0 ? '+' : '-'
   const abs = Math.abs(offset)
   const hours = String(Math.floor(abs / 60)).padStart(2, '0')

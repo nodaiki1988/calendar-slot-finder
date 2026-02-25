@@ -7,6 +7,11 @@ const cache = new CacheManager()
 const FREEBUSY_TTL = 5 * 60 * 1000   // 5分
 const LIST_TTL = 30 * 60 * 1000       // 30分
 
+/** オブジェクトのキーをソートして決定的なJSON文字列を返す */
+function stableStringify(obj: unknown): string {
+  return JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort())
+}
+
 chrome.runtime.onMessage.addListener(
   (message: MessageType, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return
@@ -29,7 +34,7 @@ async function handleMessage(message: MessageType): Promise<MessageResponse> {
           : { success: false, error: '認証に失敗しました' }
 
       case 'FETCH_FREE_BUSY': {
-        const cacheKey = `freeBusy:${JSON.stringify(message.payload)}`
+        const cacheKey = `freeBusy:${stableStringify(message.payload)}`
         const cached = await cache.get(cacheKey)
         if (cached) return { success: true, data: cached }
 

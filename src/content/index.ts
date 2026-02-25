@@ -190,6 +190,13 @@ function hideOverlay() {
   document.getElementById('csf-overlay-container')?.remove()
 }
 
+/**
+ * ISO文字列からGoogle Calendar URL用の日時文字列を生成する
+ * "2026-02-24T09:00:00+09:00" → "20260224T090000"
+ * ローカル時刻をそのまま使用し、UTC変換しない
+ */
 function toGCalDate(iso: string): string {
-  return new Date(iso).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  const [datePart, rest] = iso.split('T')
+  const timePart = rest.replace(/[+-]\d{2}:\d{2}$/, '').replace(/Z$/, '')
+  return datePart.replace(/-/g, '') + 'T' + timePart.replace(/:/g, '').split('.')[0]
 }
