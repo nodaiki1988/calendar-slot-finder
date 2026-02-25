@@ -108,6 +108,8 @@ function reducer(state: AppState, action: Action): AppState {
         },
         purpose: action.payload.members.length > 0 ? 'meeting' : 'personal',
         step: 'config',
+        results: [],
+        excludedHolidays: [],
       }
     case 'RESET':
       return initialState

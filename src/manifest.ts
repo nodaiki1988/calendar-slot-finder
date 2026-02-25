@@ -5,7 +5,7 @@ export default defineManifest({
   name: 'Calendar Slot Finder',
   version: '1.0.0',
   description: 'Googleカレンダーから複数人の空き時間を検索',
-  permissions: ['identity', 'storage', 'activeTab'],
+  permissions: ['identity', 'storage', 'activeTab', 'sidePanel'],
   host_permissions: ['https://www.googleapis.com/*'],
   oauth2: {
     client_id: '626523874268-uo51dvsiinoonghvudu1cmqs85dj66c0.apps.googleusercontent.com',
@@ -22,6 +22,9 @@ export default defineManifest({
       '48': 'icons/icon48.png',
       '128': 'icons/icon128.png',
     },
+  },
+  side_panel: {
+    default_path: 'src/popup/index.html',
   },
   background: {
     service_worker: 'src/background/index.ts',

@@ -40,11 +40,11 @@ export function mergeContiguousSlots(slots: AvailableSlot[]): AvailableSlot[] {
   return merged
 }
 
-export function formatSlotsAsText(slots: AvailableSlot[]): string {
+export function formatSlotsAsText(slots: AvailableSlot[], headerText = '【空き時間】'): string {
   const merged = mergeContiguousSlots(slots)
   const grouped = groupSlotsByDate(merged)
 
-  const lines: string[] = ['【空き時間】', '']
+  const lines: string[] = [headerText, '']
   for (const [, dateSlots] of grouped) {
     lines.push(`■ ${formatDate(dateSlots[0].start)}`)
     for (const slot of dateSlots) {
@@ -58,10 +58,62 @@ export function formatSlotsAsText(slots: AvailableSlot[]): string {
 
 export function formatSlotsAsMailto(
   slots: AvailableSlot[],
-  recipients: string[]
+  recipients: string[],
+  headerText = '【空き時間】'
 ): string {
   const subject = encodeURIComponent('日程調整：空き時間のご連絡')
-  const body = encodeURIComponent(formatSlotsAsText(slots))
+  const body = encodeURIComponent(formatSlotsAsText(slots, headerText))
   const to = recipients.join(',')
   return `mailto:${to}?subject=${subject}&body=${body}`
+}
+
+/**
+ * 投票用テキストを生成（各スロットにチェックボックス付き）
+ * mergeせず個別スロットを列挙する
+ */
+export function formatSlotsAsVoting(slots: AvailableSlot[]): string {
+  const lines: string[] = [
+    '【日程調整】以下の候補から都合の良い日時に○をつけてください。',
+    '',
+  ]
+  for (const slot of slots) {
+    lines.push(`□ ${formatDate(slot.start)} ${formatTime(slot.start)}-${formatTime(slot.end)}`)
+  }
+  return lines.join('\n')
+}
+
+/**
+ * Slack mrkdwn形式でフォーマット
+ */
+export function formatSlotsForSlack(slots: AvailableSlot[], headerText = '【空き時間】'): string {
+  const merged = mergeContiguousSlots(slots)
+  const grouped = groupSlotsByDate(merged)
+
+  const lines: string[] = [`*${headerText}*`, '']
+  for (const [, dateSlots] of grouped) {
+    lines.push(`*${formatDate(dateSlots[0].start)}*`)
+    for (const slot of dateSlots) {
+      lines.push(`• ${formatTime(slot.start)} - ${formatTime(slot.end)}`)
+    }
+    lines.push('')
+  }
+  return lines.join('\n')
+}
+
+/**
+ * Teams Markdown形式でフォーマット
+ */
+export function formatSlotsForTeams(slots: AvailableSlot[], headerText = '【空き時間】'): string {
+  const merged = mergeContiguousSlots(slots)
+  const grouped = groupSlotsByDate(merged)
+
+  const lines: string[] = [`**${headerText}**`, '']
+  for (const [, dateSlots] of grouped) {
+    lines.push(`**${formatDate(dateSlots[0].start)}**`)
+    for (const slot of dateSlots) {
+      lines.push(`- ${formatTime(slot.start)} - ${formatTime(slot.end)}`)
+    }
+    lines.push('')
+  }
+  return lines.join('\n')
 }

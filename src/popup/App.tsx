@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography, Button, Stepper, Step, StepLabel } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { AppProvider, useAppContext } from './context/AppContext'
@@ -31,6 +31,13 @@ function parseDateFromCalendarUrl(url: string): string | null {
 
 function AppContent() {
   const { state, dispatch } = useAppContext()
+  const [isSidePanel, setIsSidePanel] = useState(window.innerWidth > 500)
+
+  useEffect(() => {
+    const handleResize = () => setIsSidePanel(window.innerWidth > 500)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -61,7 +68,7 @@ function AppContent() {
   }
 
   return (
-    <Box sx={{ width: 400, minHeight: 500, maxHeight: 600, p: 2, display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ width: isSidePanel ? '100%' : 400, minHeight: 500, maxHeight: isSidePanel ? '100vh' : 600, p: 2, display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexShrink: 0 }}>
         {state.step !== 'purpose' && (
           <IconButton onClick={handleBack} size="small" sx={{ mr: 1 }}>

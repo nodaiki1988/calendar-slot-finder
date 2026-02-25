@@ -24,8 +24,9 @@ export class SearchHistoryStorage {
   }
 
   async getAll(): Promise<SearchHistoryEntry[]> {
-    const data = await chrome.storage.local.get(STORAGE_KEY) as Record<string, SearchHistoryEntry[]>
-    return data[STORAGE_KEY] || []
+    const data = await chrome.storage.local.get(STORAGE_KEY) as Record<string, unknown>
+    const raw = data[STORAGE_KEY]
+    return Array.isArray(raw) ? raw : []
   }
 
   async clear(): Promise<void> {

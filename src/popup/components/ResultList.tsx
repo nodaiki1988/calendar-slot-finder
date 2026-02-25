@@ -22,6 +22,7 @@ export default function ResultList() {
   // results変更時に全選択でリセット
   useEffect(() => {
     setSelectedIndices(new Set(state.results.map((_, i) => i)))
+    lastClickedIndex.current = null
   }, [state.results])
 
   // grouped + indexマッピング

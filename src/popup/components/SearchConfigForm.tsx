@@ -40,7 +40,9 @@ function toDateStr(d: Date): string {
 function getThisWeekRange(): { start: string; end: string } {
   const today = new Date()
   const dow = today.getDay() // 0=日
-  const daysUntilFri = dow <= 5 ? 5 - dow : 5 + 7 - dow
+  // 土日の場合は来週月〜金を返す
+  if (dow === 0 || dow === 6) return getNextWeekRange()
+  const daysUntilFri = 5 - dow
   const fri = new Date(today)
   fri.setDate(today.getDate() + daysUntilFri)
   return { start: toDateStr(today), end: toDateStr(fri) }

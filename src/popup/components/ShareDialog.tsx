@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -7,14 +7,23 @@ import {
   Button,
   TextField,
   Alert,
-  ToggleButton,
-  ToggleButtonGroup,
+  Tab,
+  Tabs,
+  Box,
 } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import EmailIcon from '@mui/icons-material/Email'
 import { useAppContext } from '../context/AppContext'
-import { formatSlotsAsText, formatSlotsAsMailto } from '../../logic/share-formatter'
+import {
+  formatSlotsAsText,
+  formatSlotsAsMailto,
+  formatSlotsAsVoting,
+  formatSlotsForSlack,
+  formatSlotsForTeams,
+} from '../../logic/share-formatter'
 import type { AvailableSlot } from '../../types'
+
+type ShareMode = 'text' | 'email' | 'voting' | 'slack' | 'teams'
 
 interface Props {
   open: boolean
@@ -24,47 +33,73 @@ interface Props {
 
 export default function ShareDialog({ open, onClose, slots }: Props) {
   const { state } = useAppContext()
-  const [mode, setMode] = useState<'copy' | 'email'>('copy')
+  const [mode, setMode] = useState<ShareMode>('text')
   const [copied, setCopied] = useState(false)
+  const [headerText, setHeaderText] = useState('【空き時間】')
 
-  const text = formatSlotsAsText(slots)
+  const previewText = useMemo(() => {
+    switch (mode) {
+      case 'text':
+      case 'email':
+        return formatSlotsAsText(slots, headerText)
+      case 'voting':
+        return formatSlotsAsVoting(slots)
+      case 'slack':
+        return formatSlotsForSlack(slots, headerText)
+      case 'teams':
+        return formatSlotsForTeams(slots, headerText)
+    }
+  }, [slots, mode, headerText])
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
+    await navigator.clipboard.writeText(previewText)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   const handleEmail = () => {
-    // カレンダーリソースID（group.calendar.google.com等）を除外し、人のメールのみ送信
     const emails = state.members
       .map((m) => m.email)
       .filter((e) => !e.endsWith('.calendar.google.com'))
-    const url = formatSlotsAsMailto(slots, emails)
+    const url = formatSlotsAsMailto(slots, emails, headerText)
     window.open(url)
   }
+
+  const showHeaderInput = mode !== 'voting'
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>結果を共有</DialogTitle>
       <DialogContent>
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={(_e, v) => v && setMode(v)}
-          size="small"
-          sx={{ mb: 2 }}
-        >
-          <ToggleButton value="copy">
-            <ContentCopyIcon sx={{ mr: 0.5 }} /> コピー
-          </ToggleButton>
-          <ToggleButton value="email">
-            <EmailIcon sx={{ mr: 0.5 }} /> メール
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs
+            value={mode}
+            onChange={(_e, v) => { setMode(v); setCopied(false) }}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{ minHeight: 36 }}
+          >
+            <Tab label="テキスト" value="text" sx={{ minHeight: 36, py: 0 }} />
+            <Tab label="メール" value="email" sx={{ minHeight: 36, py: 0 }} />
+            <Tab label="投票用" value="voting" sx={{ minHeight: 36, py: 0 }} />
+            <Tab label="Slack" value="slack" sx={{ minHeight: 36, py: 0 }} />
+            <Tab label="Teams" value="teams" sx={{ minHeight: 36, py: 0 }} />
+          </Tabs>
+        </Box>
+
+        {showHeaderInput && (
+          <TextField
+            label="ヘッダー文言"
+            value={headerText}
+            onChange={(e) => setHeaderText(e.target.value)}
+            size="small"
+            fullWidth
+            sx={{ mb: 1 }}
+          />
+        )}
 
         <TextField
-          value={text}
+          value={previewText}
           multiline
           rows={8}
           fullWidth
@@ -76,10 +111,14 @@ export default function ShareDialog({ open, onClose, slots }: Props) {
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>閉じる</Button>
-        {mode === 'copy' ? (
-          <Button variant="contained" onClick={handleCopy}>クリップボードにコピー</Button>
+        {mode === 'email' ? (
+          <Button variant="contained" startIcon={<EmailIcon />} onClick={handleEmail}>
+            メールで送信
+          </Button>
         ) : (
-          <Button variant="contained" onClick={handleEmail}>メールで送信</Button>
+          <Button variant="contained" startIcon={<ContentCopyIcon />} onClick={handleCopy}>
+            クリップボードにコピー
+          </Button>
         )}
       </DialogActions>
     </Dialog>
