@@ -12,7 +12,6 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  ListItemIcon,
   ListItemText,
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -63,6 +62,8 @@ export default function CalendarPicker() {
       })
     }
     await refreshGroups()
+    setAddToGroupAnchor(null)
+    setAddToGroupCalendar(null)
   }
 
   const loadCalendars = async () => {
@@ -170,9 +171,7 @@ export default function CalendarPicker() {
             : false
           return (
             <MenuItem key={g.id} onClick={() => handleToggleGroup(g.id)}>
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                {isInGroup && <CheckIcon sx={{ fontSize: 18, color: 'primary.main' }} />}
-              </ListItemIcon>
+              {isInGroup && <CheckIcon sx={{ fontSize: 18, color: 'primary.main', mr: 1 }} />}
               <ListItemText>{g.name}</ListItemText>
             </MenuItem>
           )

@@ -8,20 +8,16 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Menu,
   MenuItem,
-  ListItemIcon,
   ListItemText,
 } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import GroupAddIcon from '@mui/icons-material/GroupAdd'
+import GroupsIcon from '@mui/icons-material/Groups'
 import CheckIcon from '@mui/icons-material/Check'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
@@ -133,14 +129,22 @@ export default function MemberPicker() {
       await groupStorage.addMemberToGroup(groupId, addToGroupMember)
     }
     await refreshGroups()
+    setAddToGroupAnchor(null)
+    setAddToGroupMember(null)
   }
 
-  const handleRemoveFromGroup = async (groupId: string, email: string) => {
-    await groupStorage.removeMemberFromGroup(groupId, email)
-    await refreshGroups()
+  const handleGroupSelect = (group: FavoriteGroup) => {
+    const allSelected = group.members.every((m) =>
+      state.members.some((sm) => sm.email === m.email)
+    )
+    if (allSelected) {
+      group.members.forEach((m) => dispatch({ type: 'REMOVE_MEMBER', payload: m.email }))
+    } else {
+      group.members
+        .filter((m) => !state.members.some((sm) => sm.email === m.email))
+        .forEach((m) => dispatch({ type: 'ADD_MEMBER', payload: m }))
+    }
   }
-
-  const isSelected = (email: string) => state.members.some((m) => m.email === email)
 
   return (
     <Box>
@@ -191,9 +195,7 @@ export default function MemberPicker() {
             : false
           return (
             <MenuItem key={g.id} onClick={() => handleToggleGroup(g.id)}>
-              <ListItemIcon sx={{ minWidth: 28 }}>
-                {isInGroup && <CheckIcon sx={{ fontSize: 18, color: 'primary.main' }} />}
-              </ListItemIcon>
+              {isInGroup && <CheckIcon sx={{ fontSize: 18, color: 'primary.main', mr: 1 }} />}
               <ListItemText>{g.name}</ListItemText>
             </MenuItem>
           )
@@ -209,45 +211,33 @@ export default function MemberPicker() {
           <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
             お気に入りグループ
           </Typography>
-          {groups.map((group) => (
-            <Accordion key={group.id} disableGutters sx={{ '&:before': { display: 'none' } }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
-                    {group.name}（{group.members.length}）
-                  </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {groups.map((group) => {
+              const allSelected = group.members.length > 0 && group.members.every((m) =>
+                state.members.some((sm) => sm.email === m.email)
+              )
+              return (
+                <Box key={group.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Chip
+                    icon={<GroupsIcon sx={{ fontSize: 16 }} />}
+                    label={group.name + '（' + group.members.length + '）'}
+                    size="small"
+                    color={allSelected ? 'primary' : 'default'}
+                    variant={allSelected ? 'filled' : 'outlined'}
+                    onClick={() => handleGroupSelect(group)}
+                    sx={{ cursor: 'pointer' }}
+                  />
                   <IconButton
                     size="small"
-                    onClick={(e) => { e.stopPropagation(); setDeleteGroupTarget(group) }}
+                    onClick={() => setDeleteGroupTarget(group)}
                     sx={{ p: 0.3 }}
                   >
                     <DeleteIcon sx={{ fontSize: 16 }} />
                   </IconButton>
                 </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, pb: 1 }}>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {group.members.map((m) => (
-                    <Chip
-                      key={m.email}
-                      label={m.name}
-                      size="small"
-                      color={isSelected(m.email) ? 'primary' : 'default'}
-                      variant={isSelected(m.email) ? 'filled' : 'outlined'}
-                      onClick={() => isSelected(m.email) ? handleRemoveMember(m.email) : handleAddMember(m)}
-                      onDelete={() => handleRemoveFromGroup(group.id, m.email)}
-                      sx={{ cursor: 'pointer' }}
-                    />
-                  ))}
-                  {group.members.length === 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      メンバーがいません
-                    </Typography>
-                  )}
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+              )
+            })}
+          </Box>
         </Box>
       )}
 
