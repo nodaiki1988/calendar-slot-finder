@@ -193,7 +193,7 @@ export default function SearchConfigForm() {
         <TemplateManager />
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+      <Box sx={{ display: 'flex', gap: 0.5, mb: 1.5 }}>
         <Chip label="今週" size="small" variant="outlined" clickable onClick={() => setDateRange(getThisWeekRange())} />
         <Chip label="来週" size="small" variant="outlined" clickable onClick={() => setDateRange(getNextWeekRange())} />
         <Chip label="今月" size="small" variant="outlined" clickable onClick={() => setDateRange(getThisMonthRange())} />
@@ -290,10 +290,10 @@ export default function SearchConfigForm() {
       </Box>
 
       <FormControl size="small" fullWidth sx={{ mb: 2 }}>
-        <InputLabel>MTG時間</InputLabel>
+        <InputLabel>所要時間</InputLabel>
         <Select
           value={searchConfig.minimumDurationMinutes}
-          label="MTG時間"
+          label="所要時間"
           onChange={(e) =>
             dispatch({
               type: 'SET_SEARCH_CONFIG',
@@ -326,7 +326,7 @@ export default function SearchConfigForm() {
           />
         }
         label="終日の予定を除外する"
-        sx={{ mb: 1 }}
+        sx={{ mb: 0.5 }}
       />
 
       <Tooltip title="検索期間内の祝日（例: 春分の日、天皇誕生日など）を候補から自動的に除外します" placement="top">

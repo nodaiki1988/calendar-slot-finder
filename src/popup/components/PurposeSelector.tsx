@@ -73,7 +73,7 @@ export default function PurposeSelector() {
             variant="outlined"
             sx={{
               borderRadius: 3,
-              transition: 'all 0.15s ease-in-out',
+              transition: 'all 0.15s ease',
               '&:hover': {
                 borderColor: 'primary.main',
                 boxShadow: '0 1px 6px rgba(26,115,232,0.15)',
@@ -96,7 +96,7 @@ export default function PurposeSelector() {
                 <Box
                   sx={{
                     color: 'primary.main',
-                    bgcolor: 'rgba(26, 115, 232, 0.08)',
+                    bgcolor: 'rgba(26, 115, 232, 0.12)',
                     borderRadius: 2,
                     width: 48,
                     height: 48,

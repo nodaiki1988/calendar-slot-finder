@@ -13,18 +13,26 @@ interface Props {
   message: string
   onConfirm: () => void
   onCancel: () => void
+  confirmLabel?: string
+  danger?: boolean
 }
 
-export default function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Props) {
+export default function ConfirmDialog({ open, title, message, onConfirm, onCancel, confirmLabel = '削除', danger = true }: Props) {
   return (
-    <Dialog open={open} onClose={onCancel}>
-      <DialogTitle>{title}</DialogTitle>
+    <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ pb: 1 }}>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onCancel}>キャンセル</Button>
-        <Button variant="contained" onClick={onConfirm}>OK</Button>
+        <Button
+          variant="contained"
+          color={danger ? 'error' : 'primary'}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </Button>
       </DialogActions>
     </Dialog>
   )

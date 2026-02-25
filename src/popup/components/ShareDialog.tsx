@@ -77,13 +77,13 @@ export default function ShareDialog({ open, onClose, slots }: Props) {
             onChange={(_e, v) => { setMode(v); setCopied(false) }}
             variant="scrollable"
             scrollButtons="auto"
-            sx={{ minHeight: 36 }}
+            sx={{ minHeight: 42 }}
           >
-            <Tab label="テキスト" value="text" sx={{ minHeight: 36, py: 0 }} />
-            <Tab label="メール" value="email" sx={{ minHeight: 36, py: 0 }} />
-            <Tab label="投票用" value="voting" sx={{ minHeight: 36, py: 0 }} />
-            <Tab label="Slack" value="slack" sx={{ minHeight: 36, py: 0 }} />
-            <Tab label="Teams" value="teams" sx={{ minHeight: 36, py: 0 }} />
+            <Tab label="テキスト" value="text" sx={{ minHeight: 42, py: 0.5, fontSize: '0.8rem' }} />
+            <Tab label="メール" value="email" sx={{ minHeight: 42, py: 0.5, fontSize: '0.8rem' }} />
+            <Tab label="投票用" value="voting" sx={{ minHeight: 42, py: 0.5, fontSize: '0.8rem' }} />
+            <Tab label="Slack" value="slack" sx={{ minHeight: 42, py: 0.5, fontSize: '0.8rem' }} />
+            <Tab label="Teams" value="teams" sx={{ minHeight: 42, py: 0.5, fontSize: '0.8rem' }} />
           </Tabs>
         </Box>
 

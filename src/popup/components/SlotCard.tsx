@@ -27,10 +27,15 @@ export default function SlotCard({ slot, onCreateEvent, checked, onToggle }: Pro
         justifyContent: 'space-between',
         p: 1.5,
         borderRadius: 2,
-        bgcolor: checked === false ? 'rgba(0, 0, 0, 0.04)' : 'rgba(52, 168, 83, 0.08)',
-        border: checked === false ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid rgba(52, 168, 83, 0.3)',
-        opacity: checked === false ? 0.6 : 1,
+        bgcolor: checked === false ? 'rgba(0, 0, 0, 0.02)' : 'rgba(26, 115, 232, 0.06)',
+        border: '1px solid',
+        borderColor: checked === false ? 'divider' : 'rgba(26, 115, 232, 0.3)',
+        opacity: checked === false ? 0.7 : 1,
         mb: 1,
+        transition: 'all 0.15s ease',
+        '&:hover': {
+          bgcolor: checked === false ? 'rgba(0, 0, 0, 0.04)' : 'rgba(26, 115, 232, 0.1)',
+        },
       }}
     >
       {onToggle && (
@@ -42,7 +47,7 @@ export default function SlotCard({ slot, onCreateEvent, checked, onToggle }: Pro
         />
       )}
       <Box sx={{ flex: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
           {formatTime(slot.start)} - {formatTime(slot.end)}
         </Typography>
         <Typography variant="caption" color="text.secondary">
@@ -54,6 +59,8 @@ export default function SlotCard({ slot, onCreateEvent, checked, onToggle }: Pro
         variant="outlined"
         startIcon={<AddIcon />}
         onClick={() => onCreateEvent(slot)}
+        disableElevation
+        sx={{ textTransform: 'none' }}
       >
         作成
       </Button>

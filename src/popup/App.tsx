@@ -17,10 +17,36 @@ const theme = createTheme({
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
   },
   shape: { borderRadius: 12 },
+  components: {
+    MuiButton: {
+      defaultProps: {
+        disableElevation: true,
+      },
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          borderRadius: 16,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+        },
+      },
+    },
+  },
 })
 
 function parseDateFromCalendarUrl(url: string): string | null {
-  // /calendar/r/week/2026/2/23, /calendar/r/day/2026/2/23 等からYYYY-MM-DD取得
   const match = url.match(/\/calendar\/r\/\w+\/(\d{4})\/(\d{1,2})\/(\d{1,2})/)
   if (match) {
     const [, y, m, d] = match
@@ -75,7 +101,7 @@ function AppContent() {
             <ArrowBackIcon />
           </IconButton>
         )}
-        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main', letterSpacing: '-0.02em' }}>
           Calendar Slot Finder
         </Typography>
       </Box>
@@ -90,10 +116,10 @@ function AppContent() {
           : { purpose: 0, members: 1, config: 2, results: 3 }
         const activeStep = stepMap[state.step as keyof typeof stepMap] ?? 0
         return (
-          <Stepper activeStep={activeStep} alternativeLabel sx={{ py: 0.5, mb: 1, flexShrink: 0 }}>
+          <Stepper activeStep={activeStep} alternativeLabel sx={{ py: 0.5, mb: 1.5, flexShrink: 0 }}>
             {steps.map((label) => (
               <Step key={label}>
-                <StepLabel slotProps={{ label: { sx: { fontSize: '0.7rem' } } }}>{label}</StepLabel>
+                <StepLabel slotProps={{ label: { sx: { fontSize: '0.75rem', fontWeight: 500 } } }}>{label}</StepLabel>
               </Step>
             ))}
           </Stepper>
