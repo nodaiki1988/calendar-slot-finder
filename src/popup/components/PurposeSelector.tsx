@@ -54,7 +54,9 @@ export default function PurposeSelector() {
   const [history, setHistory] = useState<SearchHistoryEntry[]>([])
 
   useEffect(() => {
-    historyStorage.getAll().then((entries) => setHistory(entries.slice(0, 3))).catch(() => {})
+    historyStorage.getAll().then((entries) => setHistory(entries.slice(0, 3))).catch((error) => {
+      console.warn('Failed to load search history:', error)
+    })
   }, [])
 
   const handleLoadHistory = (entry: SearchHistoryEntry) => {

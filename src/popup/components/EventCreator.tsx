@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -42,6 +42,14 @@ export default function EventCreator({ slot, open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [removedEmails, setRemovedEmails] = useState<Set<string>>(new Set())
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // アンマウント時にタイマーをクリア
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
 
   const allGuests = useMemo(() => {
     const fromMembers = state.members.map((m) => ({
@@ -58,16 +66,18 @@ export default function EventCreator({ slot, open, onClose }: Props) {
   const activeGuests = allGuests.filter((g) => !removedEmails.has(g.email))
 
   const handleCreate = async () => {
-    if (!slot || !summary.trim()) return
+    const currentSlot = slot
+    if (!currentSlot || !summary.trim()) return
     setLoading(true)
     setError(null)
 
     try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
       const params: InsertEventRequest = {
         summary: summary.trim(),
         description: description.trim() || undefined,
-        start: { dateTime: slot.start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        end: { dateTime: slot.end, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        start: { dateTime: currentSlot.start, timeZone: tz },
+        end: { dateTime: currentSlot.end, timeZone: tz },
         attendees: activeGuests.map((g) => ({ email: g.email })),
       }
 
@@ -77,7 +87,7 @@ export default function EventCreator({ slot, open, onClose }: Props) {
 
       await sendMessage({ type: 'CREATE_EVENT', payload: params })
       setSuccess(true)
-      setTimeout(() => {
+      successTimerRef.current = setTimeout(() => {
         onClose()
         setSuccess(false)
         setSummary('')

@@ -51,10 +51,18 @@ export default function ShareDialog({ open, onClose, slots }: Props) {
     }
   }, [slots, mode, headerText])
 
+  const [copyError, setCopyError] = useState(false)
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(previewText)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(previewText)
+      setCopied(true)
+      setCopyError(false)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopyError(true)
+      setTimeout(() => setCopyError(false), 3000)
+    }
   }
 
   const handleEmail = () => {
@@ -62,7 +70,7 @@ export default function ShareDialog({ open, onClose, slots }: Props) {
       .map((m) => m.email)
       .filter((e) => !e.endsWith('.calendar.google.com'))
     const url = formatSlotsAsMailto(slots, emails, headerText)
-    window.open(url)
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const showHeaderInput = mode !== 'voting'
@@ -108,6 +116,7 @@ export default function ShareDialog({ open, onClose, slots }: Props) {
         />
 
         {copied && <Alert severity="success" sx={{ mt: 1 }}>コピーしました</Alert>}
+        {copyError && <Alert severity="error" sx={{ mt: 1 }}>クリップボードへのコピーに失敗しました</Alert>}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>閉じる</Button>

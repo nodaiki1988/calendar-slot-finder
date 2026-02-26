@@ -42,7 +42,9 @@ export default function CalendarPicker() {
 
   useEffect(() => {
     loadCalendars()
-    groupStorage.getAllGroups().then(setGroups)
+    groupStorage.getAllGroups().then(setGroups).catch((error) => {
+      console.warn('Failed to load groups:', error)
+    })
   }, [])
 
   const refreshGroups = async () => {
@@ -73,9 +75,13 @@ export default function CalendarPicker() {
       const result = await sendMessage<CalendarListResponse>({
         type: 'FETCH_CALENDAR_LIST',
       })
+      if (!Array.isArray(result?.items)) {
+        setLoadError(true)
+        return
+      }
       setCalendars(
         result.items
-          .filter((c) => !c.primary)
+          .filter((c) => c.primary !== true)
           .map((c) => ({ id: c.id, summary: c.summary }))
       )
       // 初回読み込み時に自分のカレンダーをデフォルトで含める
@@ -152,6 +158,7 @@ export default function CalendarPicker() {
                 setAddToGroupAnchor(e.currentTarget)
               }}
               sx={{ p: 0.3, flexShrink: 0 }}
+              aria-label="グループに追加"
               title="グループに追加"
             >
               <GroupAddIcon sx={{ fontSize: 18, color: 'action.active' }} />

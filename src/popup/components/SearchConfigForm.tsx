@@ -124,10 +124,15 @@ export default function SearchConfigForm() {
         },
       })
 
+      if (!result?.calendars || typeof result.calendars !== 'object') {
+        setError('カレンダー情報の取得に失敗しました')
+        return
+      }
+
       // カレンダーごとのエラーを検出して警告表示
       const calendarErrors: string[] = []
       for (const [id, cal] of Object.entries(result.calendars)) {
-        if (cal.errors && cal.errors.length > 0) {
+        if (Array.isArray(cal.errors) && cal.errors.length > 0) {
           calendarErrors.push(id)
         }
       }
@@ -175,7 +180,9 @@ export default function SearchConfigForm() {
           members: state.members,
           calendarIds: state.calendarIds,
           searchConfig,
-        }).catch(() => {})
+        }).catch((error) => {
+          console.warn('Failed to save search history:', error)
+        })
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '検索中にエラーが発生しました')

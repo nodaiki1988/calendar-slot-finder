@@ -244,8 +244,14 @@ const STEP_MINUTES = 30
  */
 function parseTzOffsetMs(tz: string): number {
   if (tz === 'Z' || tz === '') return 0
-  const sign = tz.startsWith('-') ? -1 : 1
-  const [hours, minutes] = tz.slice(1).split(':').map(Number)
+  const match = tz.match(/^([+-])(\d{2}):(\d{2})$/)
+  if (!match) {
+    console.warn('Invalid timezone offset:', tz)
+    return 0
+  }
+  const sign = match[1] === '-' ? -1 : 1
+  const hours = parseInt(match[2], 10)
+  const minutes = parseInt(match[3], 10)
   return sign * (hours * 60 + minutes) * 60_000
 }
 
@@ -334,9 +340,9 @@ export function filterByHolidays(
  * 終日予定（24時間以上のbusyスロット）を除外する
  */
 export function filterAllDayEvents(busySlots: TimeSlot[]): TimeSlot[] {
-  const DAY_MS = 24 * 60 * 60_000
+  const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
   return busySlots.filter((slot) => {
     const duration = new Date(slot.end).getTime() - new Date(slot.start).getTime()
-    return duration < DAY_MS
+    return duration < MILLISECONDS_PER_DAY
   })
 }

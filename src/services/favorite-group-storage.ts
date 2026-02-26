@@ -6,7 +6,15 @@ const LEGACY_STORAGE_KEY = 'csf_favorite_members'
 export class FavoriteGroupStorage {
   async getAllGroups(): Promise<FavoriteGroup[]> {
     const result = await chrome.storage.local.get(STORAGE_KEY)
-    return (result[STORAGE_KEY] as FavoriteGroup[] | undefined) || []
+    const raw = (result as Record<string, unknown>)[STORAGE_KEY]
+    if (!Array.isArray(raw)) return []
+    return raw.filter((entry): entry is FavoriteGroup =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      typeof (entry as Record<string, unknown>).id === 'string' &&
+      typeof (entry as Record<string, unknown>).name === 'string' &&
+      Array.isArray((entry as Record<string, unknown>).members)
+    )
   }
 
   async saveGroup(group: Omit<FavoriteGroup, 'id'> | FavoriteGroup): Promise<FavoriteGroup> {
@@ -53,8 +61,14 @@ export class FavoriteGroupStorage {
 
   async migrateFromLegacy(): Promise<void> {
     const result = await chrome.storage.local.get(LEGACY_STORAGE_KEY)
-    const legacyMembers = result[LEGACY_STORAGE_KEY] as Member[] | undefined
-    if (!legacyMembers || legacyMembers.length === 0) return
+    const raw = (result as Record<string, unknown>)[LEGACY_STORAGE_KEY]
+    if (!Array.isArray(raw) || raw.length === 0) return
+    const legacyMembers = raw.filter((m): m is Member =>
+      typeof m === 'object' &&
+      m !== null &&
+      typeof (m as Record<string, unknown>).email === 'string'
+    )
+    if (legacyMembers.length === 0) return
 
     await this.saveGroup({
       name: 'お気に入り',

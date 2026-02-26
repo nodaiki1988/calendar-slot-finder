@@ -12,7 +12,16 @@ interface SaveTemplateParams {
 export class TemplateStorage {
   async getAll(): Promise<Template[]> {
     const result = await chrome.storage.local.get(STORAGE_KEY)
-    return (result[STORAGE_KEY] as Template[] | undefined) || []
+    const raw = (result as Record<string, unknown>)[STORAGE_KEY]
+    if (!Array.isArray(raw)) return []
+    return raw.filter((entry): entry is Template =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      typeof (entry as Record<string, unknown>).id === 'string' &&
+      typeof (entry as Record<string, unknown>).name === 'string' &&
+      Array.isArray((entry as Record<string, unknown>).members) &&
+      typeof (entry as Record<string, unknown>).searchConfig === 'object'
+    )
   }
 
   async save(params: SaveTemplateParams): Promise<Template> {

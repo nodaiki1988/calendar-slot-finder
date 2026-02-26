@@ -43,11 +43,18 @@ export default function MemberPicker() {
   const [deleteGroupTarget, setDeleteGroupTarget] = useState<FavoriteGroup | null>(null)
 
   useEffect(() => {
+    let mounted = true
     const init = async () => {
-      await groupStorage.migrateFromLegacy()
-      setGroups(await groupStorage.getAllGroups())
+      try {
+        await groupStorage.migrateFromLegacy()
+        if (mounted) setGroups(await groupStorage.getAllGroups())
+      } catch (error) {
+        console.warn('Failed to initialize groups:', error)
+        if (mounted) setGroups([])
+      }
     }
     init()
+    return () => { mounted = false }
   }, [])
 
   const refreshGroups = async () => {
@@ -92,7 +99,20 @@ export default function MemberPicker() {
     dispatch({ type: 'REMOVE_MEMBER', payload: email })
   }
 
-  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  const isValidEmail = (value: string) => {
+    if (value.length > 254) return false
+    const parts = value.split('@')
+    if (parts.length !== 2) return false
+    const [local, domain] = parts
+    return (
+      local.length > 0 &&
+      local.length <= 64 &&
+      !local.startsWith('.') &&
+      !local.endsWith('.') &&
+      !local.includes('..') &&
+      /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(domain)
+    )
+  }
 
   const handleAddManualEmail = () => {
     if (inputValue && isValidEmail(inputValue)) {
@@ -174,6 +194,7 @@ export default function MemberPicker() {
                   setAddToGroupAnchor(e.currentTarget)
                 }}
                 sx={{ p: 0.3 }}
+                aria-label="グループに追加"
                 title="グループに追加"
               >
                 <GroupAddIcon sx={{ fontSize: 18, color: 'action.active' }} />
@@ -231,6 +252,7 @@ export default function MemberPicker() {
                     size="small"
                     onClick={() => setDeleteGroupTarget(group)}
                     sx={{ p: 0.3 }}
+                    aria-label={`${group.name}を削除`}
                   >
                     <DeleteIcon sx={{ fontSize: 16 }} />
                   </IconButton>

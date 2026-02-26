@@ -81,7 +81,9 @@ function AppContent() {
         }
       }
     })
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 初回マウント時のみURLから日付を読み取る。state.searchConfigを依存に入れるとループする
+  }, [dispatch])
 
   const handleBack = () => {
     if (state.purpose === 'personal' && state.step === 'config') {

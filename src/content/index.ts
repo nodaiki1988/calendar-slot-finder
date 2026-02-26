@@ -1,5 +1,7 @@
 import type { AvailableSlot } from '../types'
 
+const GOOGLE_CALENDAR_URL = 'https://calendar.google.com/calendar/render'
+
 const OVERLAY_CSS = `
 #csf-overlay-container {
   position: fixed;
@@ -96,17 +98,29 @@ function isValidSlot(s: unknown): s is AvailableSlot {
 }
 
 chrome.runtime.onMessage.addListener(
-  (message: OverlayMessage, _sender, sendResponse) => {
-    if (
-      message.type === 'SHOW_OVERLAY' &&
-      Array.isArray(message.payload) &&
-      message.payload.every(isValidSlot)
-    ) {
-      showOverlay(message.payload)
-      sendResponse({ success: true })
-    } else if (message.type === 'HIDE_OVERLAY') {
-      hideOverlay()
-      sendResponse({ success: true })
+  (message: unknown, _sender, sendResponse) => {
+    try {
+      if (typeof message !== 'object' || message === null) {
+        sendResponse({ success: false, error: 'Invalid message' })
+        return
+      }
+      const msg = message as OverlayMessage
+      if (
+        msg.type === 'SHOW_OVERLAY' &&
+        Array.isArray(msg.payload) &&
+        msg.payload.every(isValidSlot)
+      ) {
+        showOverlay(msg.payload)
+        sendResponse({ success: true })
+      } else if (msg.type === 'HIDE_OVERLAY') {
+        hideOverlay()
+        sendResponse({ success: true })
+      } else {
+        sendResponse({ success: false, error: 'Unknown message type' })
+      }
+    } catch (error) {
+      console.error('Content script error:', error)
+      sendResponse({ success: false, error: 'Internal error' })
     }
   }
 )
@@ -171,10 +185,20 @@ function showOverlay(slots: AvailableSlot[]) {
     slotEl.appendChild(timeEl)
 
     slotEl.addEventListener('click', () => {
-      const url = new URL('https://calendar.google.com/calendar/render')
-      url.searchParams.set('action', 'TEMPLATE')
-      url.searchParams.set('dates', `${toGCalDate(slot.start)}/${toGCalDate(slot.end)}`)
-      window.open(url.toString(), '_blank')
+      try {
+        const startDate = toGCalDate(slot.start)
+        const endDate = toGCalDate(slot.end)
+        if (!/^\d{8}T\d{6}$/.test(startDate) || !/^\d{8}T\d{6}$/.test(endDate)) {
+          console.error('Invalid date format for calendar URL')
+          return
+        }
+        const url = new URL(GOOGLE_CALENDAR_URL)
+        url.searchParams.set('action', 'TEMPLATE')
+        url.searchParams.set('dates', `${startDate}/${endDate}`)
+        window.open(url.toString(), '_blank', 'noopener,noreferrer')
+      } catch (error) {
+        console.error('Failed to open calendar:', error)
+      }
     })
 
     list.appendChild(slotEl)

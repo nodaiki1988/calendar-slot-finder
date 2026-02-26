@@ -16,7 +16,9 @@ export async function revokeAuthToken(): Promise<void> {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `token=${encodeURIComponent(result.token)}`,
-      }).catch(() => {})
+      }).catch((error) => {
+        console.warn('Failed to revoke token via OAuth2 endpoint:', error)
+      })
     }
   } catch {
     // ignore

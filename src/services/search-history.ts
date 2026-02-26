@@ -24,9 +24,17 @@ export class SearchHistoryStorage {
   }
 
   async getAll(): Promise<SearchHistoryEntry[]> {
-    const data = await chrome.storage.local.get(STORAGE_KEY) as Record<string, unknown>
-    const raw = data[STORAGE_KEY]
-    return Array.isArray(raw) ? raw : []
+    const data = await chrome.storage.local.get(STORAGE_KEY)
+    const raw = (data as Record<string, unknown>)[STORAGE_KEY]
+    if (!Array.isArray(raw)) return []
+    return raw.filter((entry): entry is SearchHistoryEntry =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      typeof (entry as Record<string, unknown>).id === 'string' &&
+      typeof (entry as Record<string, unknown>).timestamp === 'number' &&
+      Array.isArray((entry as Record<string, unknown>).members) &&
+      typeof (entry as Record<string, unknown>).searchConfig === 'object'
+    )
   }
 
   async clear(): Promise<void> {

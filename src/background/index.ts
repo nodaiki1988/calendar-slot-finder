@@ -15,7 +15,15 @@ function stableStringify(obj: unknown): string {
 chrome.runtime.onMessage.addListener(
   (message: MessageType, sender, sendResponse) => {
     if (sender.id !== chrome.runtime.id) return
-    handleMessage(message).then(sendResponse)
+    handleMessage(message)
+      .then(sendResponse)
+      .catch((error) => {
+        console.error('Unhandled message handler error:', error)
+        sendResponse({
+          success: false,
+          error: error instanceof Error ? error.message : '不明なエラー',
+        })
+      })
     return true // 非同期レスポンス
   }
 )

@@ -87,30 +87,35 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, error: action.payload }
     case 'SET_STEP':
       return { ...state, step: action.payload }
-    case 'LOAD_TEMPLATE':
+    case 'LOAD_TEMPLATE': {
+      const t = action.payload
       return {
         ...state,
-        members: action.payload.members,
-        calendarIds: action.payload.calendarIds,
+        members: Array.isArray(t.members) ? t.members : [],
+        calendarIds: Array.isArray(t.calendarIds) ? t.calendarIds : [],
         searchConfig: {
           ...defaultSearchConfig,
-          ...action.payload.searchConfig,
+          ...(typeof t.searchConfig === 'object' && t.searchConfig !== null ? t.searchConfig : {}),
         },
       }
-    case 'LOAD_HISTORY':
+    }
+    case 'LOAD_HISTORY': {
+      const h = action.payload
+      const members = Array.isArray(h.members) ? h.members : []
       return {
         ...state,
-        members: action.payload.members,
-        calendarIds: action.payload.calendarIds,
+        members,
+        calendarIds: Array.isArray(h.calendarIds) ? h.calendarIds : [],
         searchConfig: {
           ...defaultSearchConfig,
-          ...action.payload.searchConfig,
+          ...(typeof h.searchConfig === 'object' && h.searchConfig !== null ? h.searchConfig : {}),
         },
-        purpose: action.payload.members.length > 0 ? 'meeting' : 'personal',
+        purpose: members.length > 0 ? 'meeting' : 'personal',
         step: 'config',
         results: [],
         excludedHolidays: [],
       }
+    }
     case 'RESET':
       return initialState
     default:
